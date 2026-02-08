@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 96" fill="none">
+  <defs>
+    <linearGradient id="g" x1="16" y1="16" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08B8A5" />
+      <stop offset="1" stop-color="#0C61F0" />
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="80" height="80" rx="20" fill="url(#g)" />
+  <path d="M30 28h12v28h20v12H30V28Z" fill="#fff" />
+  <path d="M70 34a14 14 0 1 0 0 28" stroke="#fff" stroke-width="8" stroke-linecap="round" />
+  <text x="102" y="48" fill="#0F172A" font-size="28" font-family="Inter, sans-serif" font-weight="700">LiteCode</text>
+  <text x="102" y="70" fill="#64748B" font-size="14" font-family="Inter, sans-serif">Handicrafters lab</text>
+</svg>
+

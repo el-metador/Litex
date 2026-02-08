@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 24" fill="none">
+  <rect x="1" y="1" width="22" height="22" rx="5" fill="#0C61F0" />
+  <path d="M7 7h3v8h5v3H7V7Z" fill="#fff" />
+  <path d="M19 9a4 4 0 1 0 0 8" stroke="#fff" stroke-width="2" stroke-linecap="round" />
+  <text x="32" y="16" fill="currentColor" font-size="12" font-family="Inter, sans-serif" font-weight="700">LiteCode</text>
+  <text x="88" y="16" fill="#64748B" font-size="10" font-family="Inter, sans-serif">Handicrafters lab</text>
+</svg>

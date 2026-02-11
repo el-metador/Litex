@@ -36,7 +36,7 @@ export const links: LinksFunction = () => [
   },
   {
     rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap',
+    href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700;800&display=swap',
   },
 ];
 
@@ -47,7 +47,7 @@ const inlineThemeCode = stripIndents`
     let theme = localStorage.getItem('litecode_theme') || localStorage.getItem('bolt_theme');
 
     if (!theme) {
-      theme = 'light';
+      theme = 'dark';
     }
 
     document.querySelector('html')?.setAttribute('data-theme', theme);
@@ -106,7 +106,9 @@ export function ErrorBoundary() {
         <h1 className="text-2xl font-semibold">{title}</h1>
         <p className="mt-3 text-bolt-elements-textSecondary">{message}</p>
         {import.meta.env.DEV && error instanceof Error && error.stack ? (
-          <pre className="mt-4 overflow-auto rounded-lg bg-bolt-elements-background-depth-1 p-3 text-xs">{error.stack}</pre>
+          <pre className="mt-4 overflow-auto rounded-lg bg-bolt-elements-background-depth-1 p-3 text-xs">
+            {error.stack}
+          </pre>
         ) : null}
       </section>
     </main>

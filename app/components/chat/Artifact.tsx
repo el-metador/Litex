@@ -1,10 +1,8 @@
 import { useStore } from '@nanostores/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { computed } from 'nanostores';
 import { memo, useEffect, useRef, useState } from 'react';
 import { createHighlighter, type BundledLanguage, type BundledTheme, type HighlighterGeneric } from 'shiki';
-import type { ActionState } from '~/lib/runtime/action-runner';
-import { workbenchStore } from '~/lib/stores/workbench';
+import { type LiteActionState, workbenchStore } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
 
@@ -31,11 +29,7 @@ export const Artifact = memo(({ messageId }: ArtifactProps) => {
   const artifacts = useStore(workbenchStore.artifacts);
   const artifact = artifacts[messageId];
 
-  const actions = useStore(
-    computed(artifact.runner.actions, (actions) => {
-      return Object.values(actions);
-    }),
-  );
+  const actions = artifact ? Object.values(artifact.actions) : [];
 
   const toggleActions = () => {
     userToggledActions.current = true;
@@ -60,7 +54,7 @@ export const Artifact = memo(({ messageId }: ArtifactProps) => {
         >
           <div className="px-5 p-3.5 w-full text-left">
             <div className="w-full text-bolt-elements-textPrimary font-medium leading-5 text-sm">{artifact?.title}</div>
-            <div className="w-full w-full text-bolt-elements-textSecondary text-xs mt-0.5">Click to open Workbench</div>
+            <div className="w-full w-full text-bolt-elements-textSecondary text-xs mt-0.5">Open Lite Agent editor</div>
           </div>
         </button>
         <div className="bg-bolt-elements-artifacts-borderColor w-[1px]" />
@@ -121,7 +115,7 @@ function ShellCodeBlock({ classsName, code }: ShellCodeBlockProps) {
 }
 
 interface ActionListProps {
-  actions: ActionState[];
+  actions: LiteActionState[];
 }
 
 const actionVariants = {
@@ -189,7 +183,7 @@ const ActionList = memo(({ actions }: ActionListProps) => {
   );
 });
 
-function getIconColor(status: ActionState['status']) {
+function getIconColor(status: LiteActionState['status']) {
   switch (status) {
     case 'pending': {
       return 'text-bolt-elements-textTertiary';

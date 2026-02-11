@@ -7,14 +7,21 @@
 @import './components/editor.scss';
 @import './components/toast.scss';
 
+html {
+  color-scheme: dark;
+}
+
 html,
 body {
   height: 100%;
   width: 100%;
   margin: 0;
-  background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 42%), var(--bolt-elements-bg-depth-1);
+  background:
+    radial-gradient(circle at 8% 2%, rgba(255, 255, 255, 0.14), transparent 34%),
+    radial-gradient(circle at 92% -10%, rgba(255, 255, 255, 0.12), transparent 30%),
+    linear-gradient(135deg, #0b0d11 0%, #12161c 52%, #1d232d 100%);
   color: var(--bolt-elements-textPrimary);
-  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-family: 'Sora', 'Avenir Next', 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -31,4 +38,13 @@ kbd {
 #app,
 #root {
   height: 100%;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+  mix-blend-mode: soft-light;
 }

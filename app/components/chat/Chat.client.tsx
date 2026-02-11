@@ -30,7 +30,9 @@ export function Chat() {
 
   return (
     <>
-      {ready && <ChatImpl initialMessages={initialMessages} storeMessageHistory={storeMessageHistory} sessionId={sessionId} />}
+      {ready && (
+        <ChatImpl initialMessages={initialMessages} storeMessageHistory={storeMessageHistory} sessionId={sessionId} />
+      )}
       <ToastContainer
         closeButton={({ closeToast }) => {
           return (
@@ -72,6 +74,7 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory, sessionId 
   useShortcuts();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lastImportedAssistantMessageIdRef = useRef<string | null>(null);
 
   const [chatStarted, setChatStarted] = useState(initialMessages.length > 0);
 
@@ -115,6 +118,7 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory, sessionId 
     },
     onError: (error) => {
       logger.error('Request failed\n\n', error);
+
       const message = error instanceof Error ? error.message : 'Request failed';
       toast.error(message);
     },
@@ -140,6 +144,33 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory, sessionId 
       storeMessageHistory(messages).catch((error) => toast.error(error.message));
     }
   }, [messages, isLoading, parseMessages]);
+
+  useEffect(() => {
+    if (isLoading || messages.length === 0) {
+      return;
+    }
+
+    const lastMessage = messages[messages.length - 1];
+
+    if (
+      lastMessage.role !== 'assistant' ||
+      !lastMessage.content ||
+      lastMessage.id === lastImportedAssistantMessageIdRef.current
+    ) {
+      return;
+    }
+
+    const extracted = extractCodeBlock(
+      typeof lastMessage.content === 'string' ? lastMessage.content : String(lastMessage.content),
+    );
+
+    if (!extracted) {
+      return;
+    }
+
+    lastImportedAssistantMessageIdRef.current = lastMessage.id;
+    workbenchStore.setGeneratedCode(extracted.code, extracted.filePath);
+  }, [messages, isLoading]);
 
   const scrollTextArea = () => {
     const textarea = textareaRef.current;
@@ -301,3 +332,63 @@ export const ChatImpl = memo(({ initialMessages, storeMessageHistory, sessionId 
     />
   );
 });
+
+interface ExtractedCode {
+  code: string;
+  filePath: string;
+}
+
+function extractCodeBlock(content: string): ExtractedCode | null {
+  const blockMatch = content.match(/```([\w-]+)?\n([\s\S]*?)```/);
+
+  if (!blockMatch) {
+    return null;
+  }
+
+  const language = (blockMatch[1] || '').trim().toLowerCase();
+  let code = blockMatch[2].trimEnd();
+  let filePath = resolveFilePathByLanguage(language);
+
+  const firstLine = code.split('\n')[0]?.trim();
+  const fileHint = firstLine?.match(/^(?:\/\/|#)\s*file:\s*(.+)$/i);
+
+  if (fileHint?.[1]) {
+    filePath = fileHint[1].trim();
+    code = code.slice(code.indexOf('\n') + 1);
+  }
+
+  return {
+    code: code.trimEnd(),
+    filePath,
+  };
+}
+
+function resolveFilePathByLanguage(language: string) {
+  switch (language) {
+    case 'tsx': {
+      return '/home/project/src/App.tsx';
+    }
+    case 'ts': {
+      return '/home/project/src/main.ts';
+    }
+    case 'jsx': {
+      return '/home/project/src/App.jsx';
+    }
+    case 'js': {
+      return '/home/project/src/main.js';
+    }
+    case 'json': {
+      return '/home/project/package.json';
+    }
+    case 'css':
+    case 'scss': {
+      return '/home/project/src/styles.css';
+    }
+    case 'html': {
+      return '/home/project/index.html';
+    }
+    default: {
+      return '/home/project/src/generated.txt';
+    }
+  }
+}

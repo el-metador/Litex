@@ -6,10 +6,10 @@ import { Header } from '~/components/header/Header';
 
 export const meta: MetaFunction = () => {
   return [
-    { title: 'LiteCode - Handicrafters lab' },
+    { title: 'Lite Agent - Codex Style Workspace' },
     {
       name: 'description',
-      content: 'Build, edit, and ship full-stack projects with LiteCode AI by Handicrafters lab.',
+      content: 'Build and refine code with Lite Agent in a Codex-inspired dark workspace.',
     },
   ];
 };

@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
-import { NewFrontendApp } from '~/components/new-frontend/NewFrontendApp.client';
+import { NewFrontendApp } from '~/components/new-frontend/NewFrontendApp';
 import { buildNewFrontendBootstrap } from '~/lib/new-frontend.server';
 
 export const meta: MetaFunction = () => {

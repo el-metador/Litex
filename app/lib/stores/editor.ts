@@ -1,6 +1,17 @@
 import { atom, computed, map, type MapStore, type WritableAtom } from 'nanostores';
-import type { EditorDocument, ScrollPosition } from '~/components/editor/codemirror/CodeMirrorEditor';
 import type { FileMap, FilesStore } from './files';
+
+export interface ScrollPosition {
+  top: number;
+  left: number;
+}
+
+export interface EditorDocument {
+  value: string;
+  filePath: string;
+  isBinary?: boolean;
+  scroll?: ScrollPosition;
+}
 
 export type EditorDocuments = Record<string, EditorDocument>;
 

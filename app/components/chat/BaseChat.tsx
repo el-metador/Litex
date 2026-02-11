@@ -90,48 +90,42 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       () => LLM_MODELS.find((model) => model.id === selectedModel) ?? LLM_MODELS[0],
       [selectedModel],
     );
-    const typedPromptPreview = typingState.text || TYPEWRITER_PHRASES[0];
+    const animatedPromptPlaceholder = `${typingState.text}${typingState.deleting ? '' : '|'}`;
 
     useEffect(() => {
-      let timeout: number | undefined;
+      const phrase = TYPEWRITER_PHRASES[typingState.phraseIndex];
+      let nextPhraseIndex = typingState.phraseIndex;
+      let nextCharIndex = typingState.charIndex;
+      let nextDeleting = typingState.deleting;
+      let nextDelay = typingState.deleting ? 26 : 46;
 
-      if (!chatStarted) {
-        const phrase = TYPEWRITER_PHRASES[typingState.phraseIndex];
-        let nextPhraseIndex = typingState.phraseIndex;
-        let nextCharIndex = typingState.charIndex;
-        let nextDeleting = typingState.deleting;
-        let nextDelay = typingState.deleting ? 26 : 46;
-
-        if (!typingState.deleting && typingState.charIndex < phrase.length) {
-          nextCharIndex = typingState.charIndex + 1;
-        } else if (!typingState.deleting && typingState.charIndex >= phrase.length) {
-          nextDeleting = true;
-          nextDelay = 900;
-        } else if (typingState.deleting && typingState.charIndex > 0) {
-          nextCharIndex = typingState.charIndex - 1;
-        } else if (typingState.deleting && typingState.charIndex === 0) {
-          nextDeleting = false;
-          nextPhraseIndex = (typingState.phraseIndex + 1) % TYPEWRITER_PHRASES.length;
-          nextDelay = 260;
-        }
-
-        const nextPhrase = TYPEWRITER_PHRASES[nextPhraseIndex];
-        timeout = window.setTimeout(() => {
-          setTypingState({
-            phraseIndex: nextPhraseIndex,
-            charIndex: nextCharIndex,
-            deleting: nextDeleting,
-            text: nextPhrase.slice(0, nextCharIndex),
-          });
-        }, nextDelay);
+      if (!typingState.deleting && typingState.charIndex < phrase.length) {
+        nextCharIndex = typingState.charIndex + 1;
+      } else if (!typingState.deleting && typingState.charIndex >= phrase.length) {
+        nextDeleting = true;
+        nextDelay = 900;
+      } else if (typingState.deleting && typingState.charIndex > 0) {
+        nextCharIndex = typingState.charIndex - 1;
+      } else if (typingState.deleting && typingState.charIndex === 0) {
+        nextDeleting = false;
+        nextPhraseIndex = (typingState.phraseIndex + 1) % TYPEWRITER_PHRASES.length;
+        nextDelay = 260;
       }
 
+      const nextPhrase = TYPEWRITER_PHRASES[nextPhraseIndex];
+      const timeout = window.setTimeout(() => {
+        setTypingState({
+          phraseIndex: nextPhraseIndex,
+          charIndex: nextCharIndex,
+          deleting: nextDeleting,
+          text: nextPhrase.slice(0, nextCharIndex),
+        });
+      }, nextDelay);
+
       return () => {
-        if (timeout) {
-          window.clearTimeout(timeout);
-        }
+        window.clearTimeout(timeout);
       };
-    }, [chatStarted, typingState]);
+    }, [typingState]);
 
     useEffect(() => {
       if (agentMenuOpen) {
@@ -169,15 +163,8 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   {PRIMARY_AGENT_NAME} • Handicrafters lab
                 </div>
                 <h1 className="text-4xl md:text-5xl text-center font-700 tracking-tight text-bolt-elements-textPrimary mb-2">
-                  Codex-like Workspace
+                  Build your dream
                 </h1>
-                <p className="mx-auto mb-3 max-w-2xl text-center text-bolt-elements-textSecondary">
-                  Один основной агент для разработки: быстрое проектирование, генерация и правка кода.
-                </p>
-                <p className="mx-auto mb-4 max-w-xl text-center text-sm md:text-base text-bolt-elements-textPrimary">
-                  <span className="opacity-85">{typedPromptPreview}</span>
-                  <span className="ml-0.5 inline-block h-[1em] w-[1px] bg-bolt-elements-textPrimary animate-pulse" />
-                </p>
               </div>
             )}
             <div
@@ -229,7 +216,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                       minHeight: TEXTAREA_MIN_HEIGHT,
                       maxHeight: TEXTAREA_MAX_HEIGHT,
                     }}
-                    placeholder="How can Lite Agent help you today…"
+                    placeholder={animatedPromptPlaceholder}
                     translate="no"
                     aria-label="Chat prompt"
                     name="chat-prompt"

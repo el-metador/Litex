@@ -32,19 +32,90 @@ function getErrorMessage(error: unknown) {
   }
 }
 
+function extractTextFromResponseMessages(messages: unknown) {
+  if (!Array.isArray(messages)) {
+    return '';
+  }
+
+  const textParts: string[] = [];
+
+  for (const message of messages) {
+    if (!message || typeof message !== 'object') {
+      continue;
+    }
+
+    const content = (message as { content?: unknown }).content;
+
+    if (!Array.isArray(content)) {
+      continue;
+    }
+
+    for (const part of content) {
+      if (!part || typeof part !== 'object') {
+        continue;
+      }
+
+      const textType = (part as { type?: unknown }).type;
+
+      if (textType !== 'text') {
+        continue;
+      }
+
+      const text = (part as { text?: unknown }).text;
+
+      if (typeof text !== 'string') {
+        continue;
+      }
+
+      textParts.push(text);
+    }
+  }
+
+  return textParts.join('').trim();
+}
+
+export function resolveGeneratedTextOutput(result: {
+  text?: unknown;
+  response?: { messages?: unknown };
+}) {
+  if (typeof result.text === 'string' && result.text.trim().length > 0) {
+    return result.text;
+  }
+
+  return extractTextFromResponseMessages(result.response?.messages);
+}
+
 function isFallbackEligibleError(message: string) {
   const normalized = message.toLowerCase();
 
   return (
+    normalized.includes('network') ||
+    normalized.includes('network error') ||
+    normalized.includes('fetch failed') ||
+    normalized.includes('connection') ||
+    normalized.includes('connect') ||
+    normalized.includes('timeout') ||
+    normalized.includes('timed out') ||
+    normalized.includes('econnreset') ||
+    normalized.includes('econnrefused') ||
+    normalized.includes('enotfound') ||
+    normalized.includes('socket hang up') ||
     normalized.includes('quota exceeded') ||
     normalized.includes('exceeded your current quota') ||
     normalized.includes('rate limit') ||
     normalized.includes('too many requests') ||
     normalized.includes('retry in') ||
+    normalized.includes('missing openrouter_api_key') ||
     normalized.includes('provider returned error') ||
     normalized.includes('failed to process successful response') ||
+    normalized.includes('invalid model') ||
+    normalized.includes('no endpoints found for this model') ||
+    normalized.includes('bad gateway') ||
+    normalized.includes('gateway timeout') ||
+    normalized.includes('internal server error') ||
     normalized.includes('temporarily unavailable') ||
     normalized.includes('overloaded') ||
+    normalized.includes('empty response') ||
     normalized.includes('service unavailable')
   );
 }
@@ -99,10 +170,25 @@ export function generateText(
       const candidateModel = modelCandidates[index];
 
       try {
-        return await _generateText({
+        const result = await _generateText({
           ...createBaseArgs(messages, candidateModel),
           ...options,
         });
+
+        const resolvedText = resolveGeneratedTextOutput(result);
+
+        if (!resolvedText) {
+          throw new Error('LLM returned empty response text');
+        }
+
+        if (result.text === resolvedText) {
+          return result;
+        }
+
+        return {
+          ...result,
+          text: resolvedText,
+        };
       } catch (error) {
         lastError = error;
         const message = getErrorMessage(error);

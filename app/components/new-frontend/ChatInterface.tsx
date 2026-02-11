@@ -39,6 +39,58 @@ function extractFirstCodeBlock(content: string) {
   return match ? match[1].trim() : null;
 }
 
+function extractTextFromMessageParts(parts: unknown) {
+  if (!Array.isArray(parts)) {
+    return '';
+  }
+
+  const textParts: string[] = [];
+
+  for (const part of parts) {
+    if (!part || typeof part !== 'object') {
+      continue;
+    }
+
+    const type = (part as { type?: unknown }).type;
+
+    if (type !== 'text') {
+      continue;
+    }
+
+    const text = (part as { text?: unknown }).text;
+
+    if (typeof text !== 'string') {
+      continue;
+    }
+
+    textParts.push(text);
+  }
+
+  return textParts.join('').trim();
+}
+
+function getMessageDisplayContent(message: { content?: unknown; parts?: unknown }) {
+  if (typeof message.content === 'string' && message.content.trim().length > 0) {
+    return message.content;
+  }
+
+  const fromParts = extractTextFromMessageParts(message.parts);
+
+  if (fromParts) {
+    return fromParts;
+  }
+
+  if (Array.isArray(message.content)) {
+    const fromContentParts = extractTextFromMessageParts(message.content);
+
+    if (fromContentParts) {
+      return fromContentParts;
+    }
+  }
+
+  return typeof message.content === 'string' ? message.content : '';
+}
+
 export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceProps) {
   const auth = useStore(authStore);
   const { model } = useStore(chatStore);
@@ -96,13 +148,33 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
     throw new Error(errorMessage);
   };
 
-  const { messages, append, isLoading, error } = useChat({
+  const { messages, append, isLoading, error, status } = useChat({
     api: '/api/chat',
     body: {
       model,
     },
     initialMessages: bootstrappedMessages,
     fetch: authenticatedFetch,
+    onResponse: (response) => {
+      const requestId = response.headers.get('x-litecode-request-id');
+
+      if (!requestId) {
+        return;
+      }
+
+      setLogs((prev) => [...prev, `[${timestamp()}] Lite Agent получил запрос [requestId: ${requestId}]`]);
+    },
+    onFinish: (message, { finishReason }) => {
+      const content = getMessageDisplayContent(message).trim();
+
+      if (!content) {
+        setLogs((prev) => [...prev, `[${timestamp()}] Модель вернула пустой ответ (${finishReason})`]);
+        onToast('Lite Agent получил запрос, но не вернул текст. Попробуйте повторить.');
+        return;
+      }
+
+      setLogs((prev) => [...prev, `[${timestamp()}] Lite Agent завершил ответ (${finishReason})`]);
+    },
   });
 
   useEffect(() => {
@@ -214,14 +286,23 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
     const message = `${trimmed}${fileSuffix}`;
 
     setLogs((prev) => [...prev, `[${timestamp()}] Пользователь отправил запрос`]);
-    await append({ role: 'user', content: message });
-    setInputValue('');
-    setAttachedImages([]);
+
+    try {
+      await append({ role: 'user', content: message });
+      setInputValue('');
+      setAttachedImages([]);
+    } catch (appendError) {
+      const errorMessage = appendError instanceof Error ? appendError.message : 'Не удалось отправить сообщение в чат';
+      setLogs((prev) => [...prev, `[${timestamp()}] Ошибка отправки: ${errorMessage}`]);
+      onToast(errorMessage);
+    }
   };
 
   const chatTitle = initialPrompt.trim() || 'Новая задача';
   const modelLabel = getLlmModelDefinition(model)?.label || 'Lite Agent';
   const canSend = inputValue.trim().length > 0 && auth.status === 'authenticated' && !isLoading;
+  const isAwaitingResponse = auth.status === 'authenticated' && (status === 'submitted' || status === 'streaming');
+  const responseStatusLabel = status === 'submitted' ? 'Lite Agent получил ваш запрос' : 'Lite Agent формирует ответ';
 
   const diffOutput = useMemo(() => {
     const before = baselineFiles[selectedFile] ?? '';
@@ -283,13 +364,20 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
         {activePanel === 'discussion' ? (
           <div className="space-y-6">
-            {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[88%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${message.role === 'user' ? 'bg-[#2f2f2f] text-white' : 'text-gray-200 border border-[#2a2a2a]'}`}>
-                  {typeof message.content === 'string' ? message.content : JSON.stringify(message.content)}
+            {messages.map((message, index) => {
+              const content = getMessageDisplayContent(message);
+              const isPendingAssistantMessage = isLoading && message.role === 'assistant' && index === messages.length - 1 && !content;
+
+              return (
+                <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[88%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${message.role === 'user' ? 'bg-[#2f2f2f] text-white' : 'text-gray-200 border border-[#2a2a2a]'}`}
+                  >
+                    {content ? content : !isPendingAssistantMessage ? <span className="text-gray-500">Ответ без текста.</span> : null}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {auth.status !== 'authenticated' ? (
               <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-4 text-sm text-gray-300">
@@ -297,11 +385,18 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
               </div>
             ) : null}
 
-            {isLoading ? (
+            {isAwaitingResponse ? (
               <div className="flex justify-start">
-                <div className="flex items-center gap-2 text-xs text-white bg-[#252525] border border-[#3e3e3e] rounded-md px-3 py-1.5">
-                  <div className="w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
-                  <span>Lite Agent выполняет задачу</span>
+                <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl px-4 py-3 text-white min-w-[240px]">
+                  <div className="text-xs text-gray-200">{responseStatusLabel}</div>
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-[#10a37f] animate-pulse" />
+                    <span className="h-2 w-2 rounded-full bg-[#10a37f] animate-pulse" style={{ animationDelay: '180ms' }} />
+                    <span className="h-2 w-2 rounded-full bg-[#10a37f] animate-pulse" style={{ animationDelay: '360ms' }} />
+                  </div>
+                  <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-full w-1/3 rounded-full bg-[#10a37f] animate-pulse" />
+                  </div>
                 </div>
               </div>
             ) : null}

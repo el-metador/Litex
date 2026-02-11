@@ -235,7 +235,12 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
       <div className="px-4 py-2 border-b border-[#3e3e3e] bg-[#191919]">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 overflow-hidden min-w-0">
-            <button onClick={onBack} type="button" className="text-gray-400 hover:text-white transition-colors shrink-0" aria-label="Back to dashboard">
+            <button
+              onClick={onBack}
+              type="button"
+              className="text-gray-400 hover:text-white transition-colors shrink-0 bg-transparent border-none appearance-none"
+              aria-label="Back to dashboard"
+            >
               <ArrowLeft size={20} />
             </button>
             <div className="flex flex-col min-w-0">
@@ -248,7 +253,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
               type="button"
               onClick={() => void handleGoogleAuth()}
               disabled={isAuthLoading}
-              className="px-3 py-1.5 text-xs sm:text-sm rounded-md bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-60"
+              className="px-3 py-1.5 text-xs sm:text-sm rounded-md bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-60 border-none appearance-none"
             >
               {isAuthLoading ? 'Вход...' : 'Войти через Google'}
             </button>
@@ -262,8 +267,10 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
                 key={panel.id}
                 type="button"
                 onClick={() => setActivePanel(panel.id)}
-                className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition-colors whitespace-nowrap ${
-                  activePanel === panel.id ? 'bg-[#252525] text-white border border-[#3e3e3e]' : 'text-gray-400 hover:text-white hover:bg-[#242424]'
+                className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition-colors whitespace-nowrap appearance-none ${
+                  activePanel === panel.id
+                    ? 'bg-[#252525] text-white border border-[#3e3e3e]'
+                    : 'bg-transparent text-gray-400 hover:text-white hover:bg-[#242424]'
                 }`}
               >
                 {panel.label}
@@ -325,7 +332,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
               <button
                 type="button"
                 onClick={() => setBaselineFiles(workspaceFiles)}
-                className="px-3 py-1.5 text-xs rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f]"
+                className="px-3 py-1.5 text-xs rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] appearance-none bg-transparent"
               >
                 Принять текущую версию как базу
               </button>
@@ -363,7 +370,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
                     key={path}
                     type="button"
                     onClick={() => setSelectedFile(path)}
-                    className={`w-full text-left text-xs px-2 py-1.5 rounded-md transition-colors ${
+                    className={`w-full text-left text-xs px-2 py-1.5 rounded-md transition-colors appearance-none ${
                       selectedFile === path ? 'bg-[#1f1f1f] text-white border border-[#3e3e3e]' : 'text-gray-300 hover:bg-[#2f2f2f]'
                     }`}
                   >
@@ -381,7 +388,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
                       [selectedFile]: event.target.value,
                     }))
                   }
-                  className="w-full min-h-[320px] bg-[#191919] border border-[#3e3e3e] rounded-lg p-3 text-xs font-mono text-gray-200 outline-none resize-y"
+                  className="w-full min-h-[320px] bg-[#191919] border border-[#3e3e3e] rounded-lg p-3 text-xs font-mono text-gray-200 outline-none resize-y appearance-none"
                 />
               </div>
             </div>
@@ -406,7 +413,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
             type="button"
             onClick={() => inputFileRef.current?.click()}
             disabled={auth.status !== 'authenticated'}
-            className="px-3 py-2 text-sm rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40"
+            className="px-3 py-2 text-sm rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40 bg-transparent border-none appearance-none"
           >
             +
           </button>
@@ -416,7 +423,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
             value={inputValue}
             onChange={(event) => setInputValue(event.target.value)}
             placeholder={auth.status === 'authenticated' ? 'Запросить изменения или задать вопрос...' : 'Войдите через Google, чтобы писать в чат'}
-            className="flex-1 bg-transparent text-white px-2 outline-none placeholder-gray-500 text-sm sm:text-base disabled:opacity-60"
+            className="flex-1 bg-transparent text-white px-2 outline-none placeholder-gray-500 text-sm sm:text-base disabled:opacity-100 disabled:bg-transparent disabled:text-gray-400 appearance-none"
             disabled={auth.status !== 'authenticated'}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -430,7 +437,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
               type="button"
               onClick={() => void handleSend()}
               disabled={!canSend}
-              className={`p-2 rounded-full transition-all duration-200 ${canSend ? 'bg-white text-black hover:bg-gray-200' : 'bg-[#333] text-gray-500 cursor-not-allowed'}`}
+              className={`p-2 rounded-full transition-all duration-200 border-none appearance-none ${canSend ? 'bg-white text-black hover:bg-gray-200' : 'bg-[#333] text-gray-500 cursor-not-allowed'}`}
               aria-label="Send"
             >
               <ArrowUp size={20} />
@@ -440,7 +447,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
               type="button"
               onClick={() => void handleGoogleAuth()}
               disabled={isAuthLoading}
-              className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-60"
+              className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-60 border-none appearance-none"
             >
               {isAuthLoading ? 'Вход...' : 'Войти через Google'}
             </button>

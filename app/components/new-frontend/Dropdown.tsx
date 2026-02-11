@@ -45,8 +45,9 @@ export const Dropdown = <T,>({
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className={`flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors rounded-md ${minimal ? 'p-1.5 hover:bg-white/5' : 'px-2 py-1.5 hover:bg-white/10'}`}
+        className={`flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors rounded-md bg-transparent border-none appearance-none ${minimal ? 'p-1.5 hover:bg-white/5' : 'px-2 py-1.5 hover:bg-white/10'}`}
       >
         {icon ? <span className={`${selected ? 'text-gray-300' : 'text-gray-400'}`}>{icon}</span> : null}
         {!minimal ? <span className="truncate max-w-[140px]">{selected ? renderItem(selected) : placeholder}</span> : null}

@@ -173,7 +173,7 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
       <div className="bg-[#252525] rounded-3xl border border-[#3e3e3e] shadow-2xl mb-10 transition-all overflow-hidden">
         <div className="px-5 pt-4 pb-2">
           <textarea
-            className="w-full bg-transparent text-white text-lg placeholder-gray-500 resize-none outline-none min-h-[70px] disabled:opacity-50"
+            className="w-full bg-transparent text-white text-lg placeholder-gray-500 resize-none outline-none min-h-[70px] disabled:opacity-100 disabled:bg-transparent disabled:text-gray-400 appearance-none"
             placeholder={auth.status === 'authenticated' ? 'Опишите задачу для Lite Agent' : 'Войдите через Google, чтобы начать работу'}
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
@@ -211,7 +211,7 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
               type="button"
               onClick={() => inputFileRef.current?.click()}
               disabled={auth.status !== 'authenticated'}
-              className="p-2 text-gray-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-2 text-gray-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-transparent border-none appearance-none"
               aria-label="Добавить изображения"
             >
               +
@@ -224,7 +224,7 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
                 type="button"
                 onClick={handleSubmit}
                 disabled={!prompt.trim()}
-                className={`p-2 rounded-full transition-all duration-200 ${prompt.trim() ? 'bg-white text-black hover:bg-gray-200 shadow-lg' : 'bg-[#333] text-gray-500 cursor-not-allowed'}`}
+                className={`p-2 rounded-full transition-all duration-200 border-none appearance-none ${prompt.trim() ? 'bg-white text-black hover:bg-gray-200 shadow-lg' : 'bg-[#333] text-gray-500 cursor-not-allowed'}`}
                 aria-label="Send prompt"
               >
                 <ArrowUp size={20} />
@@ -234,7 +234,7 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
                 type="button"
                 onClick={() => void handleGoogleAuth()}
                 disabled={isAuthLoading}
-                className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-60"
+                className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-60 border-none appearance-none"
               >
                 {isAuthLoading ? 'Вход...' : 'Войти через Google'}
               </button>
@@ -247,21 +247,21 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
         <button
           type="button"
           onClick={() => setActiveTab('tasks')}
-          className={`pb-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'tasks' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-gray-200'}`}
+          className={`pb-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap bg-transparent border-none appearance-none ${activeTab === 'tasks' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-gray-200'}`}
         >
           Задачи
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('review')}
-          className={`pb-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'review' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-gray-200'}`}
+          className={`pb-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap bg-transparent border-none appearance-none ${activeTab === 'review' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-gray-200'}`}
         >
           Проверка кода
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('archive')}
-          className={`pb-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'archive' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-gray-200'}`}
+          className={`pb-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap bg-transparent border-none appearance-none ${activeTab === 'archive' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-gray-200'}`}
         >
           Архивировать
         </button>
@@ -275,7 +275,7 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Поиск по истории чатов"
-              className="w-full bg-transparent text-sm text-white outline-none placeholder-gray-500"
+              className="w-full bg-transparent text-sm text-white outline-none placeholder-gray-500 appearance-none"
             />
           </div>
 
@@ -306,7 +306,7 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
               <button
                 type="button"
                 onClick={() => toggleArchive(session.id, true)}
-                className="self-start sm:self-auto inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors"
+                className="self-start sm:self-auto inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
               >
                 <Archive size={14} />
                 Перенести в архив
@@ -329,7 +329,7 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
                   setReviewEnabled(true);
                   setReviewScope('me');
                 }}
-                className={`px-4 py-2 rounded-md text-sm transition-colors ${reviewScope === 'me' ? 'bg-[#10a37f] text-white' : 'bg-[#1f1f1f] border border-[#3e3e3e] text-gray-200 hover:bg-[#2a2a2a]'}`}
+                className={`px-4 py-2 rounded-md text-sm transition-colors appearance-none ${reviewScope === 'me' ? 'bg-[#10a37f] text-white' : 'bg-[#1f1f1f] border border-[#3e3e3e] text-gray-200 hover:bg-[#2a2a2a]'}`}
               >
                 Включить для меня
               </button>
@@ -339,7 +339,7 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
                   setReviewEnabled(true);
                   setReviewScope('workspace');
                 }}
-                className={`px-4 py-2 rounded-md text-sm transition-colors ${reviewScope === 'workspace' ? 'bg-[#10a37f] text-white' : 'bg-[#1f1f1f] border border-[#3e3e3e] text-gray-200 hover:bg-[#2a2a2a]'}`}
+                className={`px-4 py-2 rounded-md text-sm transition-colors appearance-none ${reviewScope === 'workspace' ? 'bg-[#10a37f] text-white' : 'bg-[#1f1f1f] border border-[#3e3e3e] text-gray-200 hover:bg-[#2a2a2a]'}`}
               >
                 Включить для моей рабочей области
               </button>
@@ -351,7 +351,7 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
                 setReviewEnabled(false);
                 setReviewScope('none');
               }}
-              className="text-xs text-gray-400 hover:text-white"
+              className="text-xs text-gray-400 hover:text-white bg-transparent border-none appearance-none"
             >
               Отключить проверку
             </button>
@@ -401,7 +401,7 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
               <button
                 type="button"
                 onClick={() => toggleArchive(session.id, false)}
-                className="self-start sm:self-auto text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors"
+                className="self-start sm:self-auto text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
               >
                 Вернуть в задачи
               </button>

@@ -165,7 +165,7 @@ export function Settings({ onClose }: SettingsProps) {
                 <textarea
                   value={settings.systemPrompt}
                   onChange={(event) => setSettings((prev) => ({ ...prev, systemPrompt: event.target.value }))}
-                  className="w-full min-h-[140px] bg-[#252525] border border-[#3e3e3e] rounded-lg p-3 text-sm text-gray-200 outline-none"
+                  className="w-full min-h-[140px] bg-[#252525] border border-[#3e3e3e] rounded-lg p-3 text-sm text-gray-200 outline-none appearance-none"
                 />
               </div>
 
@@ -174,7 +174,7 @@ export function Settings({ onClose }: SettingsProps) {
                 <input
                   value={settings.branchFormat}
                   onChange={(event) => setSettings((prev) => ({ ...prev, branchFormat: event.target.value }))}
-                  className="w-full bg-[#252525] border border-[#3e3e3e] rounded-lg px-3 py-2 text-sm text-gray-200 outline-none"
+                  className="w-full bg-[#252525] border border-[#3e3e3e] rounded-lg px-3 py-2 text-sm text-gray-200 outline-none appearance-none"
                 />
               </div>
 
@@ -188,7 +188,7 @@ export function Settings({ onClose }: SettingsProps) {
                       responseMode: event.target.value as AgentSettingsPayload['responseMode'],
                     }))
                   }
-                  className="w-full bg-[#252525] border border-[#3e3e3e] rounded-lg px-3 py-2 text-sm text-gray-200 outline-none"
+                  className="w-full bg-[#252525] border border-[#3e3e3e] rounded-lg px-3 py-2 text-sm text-gray-200 outline-none appearance-none"
                 >
                   <option value="strict">Strict</option>
                   <option value="balanced">Balanced</option>
@@ -204,7 +204,7 @@ export function Settings({ onClose }: SettingsProps) {
                 <button
                   type="button"
                   onClick={saveSettings}
-                  className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors border-none appearance-none"
                 >
                   Сохранить настройки
                 </button>
@@ -263,8 +263,8 @@ export function Settings({ onClose }: SettingsProps) {
                       }
                       className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
                         settings.reviewScope === option.id
-                          ? 'bg-[#10a37f] text-white'
-                          : 'bg-[#252525] border border-[#3e3e3e] text-gray-300 hover:bg-[#2f2f2f]'
+                          ? 'bg-[#10a37f] text-white border-none appearance-none'
+                          : 'bg-[#252525] border border-[#3e3e3e] text-gray-300 hover:bg-[#2f2f2f] appearance-none'
                       }`}
                     >
                       {option.label}
@@ -285,7 +285,7 @@ export function Settings({ onClose }: SettingsProps) {
               <button
                 type="button"
                 onClick={() => void loadUsageData()}
-                className="px-3 py-1.5 text-xs rounded-md border border-[#3e3e3e] bg-[#252525] hover:bg-[#2f2f2f]"
+                className="px-3 py-1.5 text-xs rounded-md border border-[#3e3e3e] bg-[#252525] hover:bg-[#2f2f2f] appearance-none"
               >
                 {isLoadingUsage ? 'Обновление...' : 'Обновить'}
               </button>
@@ -375,7 +375,7 @@ export function Settings({ onClose }: SettingsProps) {
               <textarea
                 value={settings.documentsPrompt}
                 onChange={(event) => setSettings((prev) => ({ ...prev, documentsPrompt: event.target.value }))}
-                className="w-full min-h-[120px] bg-[#252525] border border-[#3e3e3e] rounded-lg p-3 text-sm text-gray-200 outline-none"
+                className="w-full min-h-[120px] bg-[#252525] border border-[#3e3e3e] rounded-lg p-3 text-sm text-gray-200 outline-none appearance-none"
               />
               <p className="text-xs text-gray-400">Этот текст добавляется как контекст, когда агент анализирует документы и спецификации.</p>
             </div>
@@ -393,7 +393,7 @@ export function Settings({ onClose }: SettingsProps) {
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-3 right-3 p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors z-50"
+        className="absolute top-3 right-3 p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors z-50 bg-transparent border-none appearance-none"
         aria-label="Close settings"
       >
         <X size={22} />
@@ -408,7 +408,7 @@ export function Settings({ onClose }: SettingsProps) {
                 key={item.id}
                 type="button"
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
+                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 bg-transparent border-none appearance-none ${
                   activeTab === item.id ? 'bg-[#252525] text-white' : 'text-gray-400 hover:bg-[#252525] hover:text-white'
                 }`}
               >
@@ -426,7 +426,7 @@ export function Settings({ onClose }: SettingsProps) {
                 key={item.id}
                 type="button"
                 onClick={() => setActiveTab(item.id)}
-                className={`px-3 py-1.5 rounded-md text-xs whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs whitespace-nowrap appearance-none ${
                   activeTab === item.id ? 'bg-[#252525] text-white border border-[#3e3e3e]' : 'text-gray-300 bg-[#1f1f1f]'
                 }`}
               >

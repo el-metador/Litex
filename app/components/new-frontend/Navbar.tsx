@@ -34,14 +34,18 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
   return (
     <nav className="flex items-center justify-between px-4 h-14 bg-[#191919] border-b border-[#252525] relative z-40">
       <div className="flex items-center gap-4 min-w-0">
-        <button type="button" className="p-2 text-gray-400 hover:text-white md:hidden" aria-label="Open menu">
+        <button
+          type="button"
+          className="p-2 text-gray-400 hover:text-white md:hidden bg-transparent border-none appearance-none"
+          aria-label="Open menu"
+        >
           <Menu size={20} />
         </button>
 
         <button
           type="button"
           onClick={() => onNavigate('dashboard')}
-          className="flex items-center gap-2 cursor-pointer group bg-transparent border-none p-0 text-white min-w-0"
+          className="flex items-center gap-2 cursor-pointer group bg-transparent border-none p-0 text-white min-w-0 appearance-none"
         >
           <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
             <Terminal size={18} className="text-white" />
@@ -67,7 +71,7 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
             type="button"
             onClick={() => void handleGoogleAuth()}
             disabled={isAuthLoading}
-            className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-white text-black rounded-md hover:bg-gray-200 transition-colors disabled:opacity-60"
+            className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-white text-black rounded-md hover:bg-gray-200 transition-colors disabled:opacity-60 appearance-none border-none"
           >
             {isAuthLoading ? 'Вход...' : 'Войти через Google'}
           </button>
@@ -76,7 +80,7 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
         <button
           type="button"
           onClick={onOpenSettings}
-          className="p-2 text-gray-300 hover:text-white rounded-md hover:bg-[#252525] transition-colors"
+          className="p-2 text-gray-300 hover:text-white rounded-md hover:bg-[#252525] transition-colors bg-transparent border-none appearance-none"
           aria-label="Open settings"
         >
           <Settings size={18} />

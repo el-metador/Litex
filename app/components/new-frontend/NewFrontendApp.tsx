@@ -54,7 +54,7 @@ export function NewFrontendApp({ repositories, branches }: NewFrontendAppProps) 
   }, [auth.status, currentView]);
 
   return (
-    <div className="min-h-screen bg-[#191919] text-white selection:bg-[#10a37f] selection:text-white">
+    <div className="litecode-app min-h-screen bg-[#191919] text-white selection:bg-[#10a37f] selection:text-white">
       <Navbar currentView={currentView} onNavigate={setCurrentView} onOpenSettings={handleOpenSettings} />
 
       <main>

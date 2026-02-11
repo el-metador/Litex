@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { hasSupabaseConfig, serverEnv } from './env';
+import { hasSupabaseAnonConfig, hasSupabaseServiceConfig, serverEnv } from './env';
 
 let anonClient: SupabaseClient | undefined;
 let serviceClient: SupabaseClient | undefined;
@@ -20,7 +20,7 @@ function buildClient(apiKey: string) {
 }
 
 export function getAnonSupabaseClient() {
-  if (!hasSupabaseConfig()) {
+  if (!hasSupabaseAnonConfig()) {
     return null;
   }
 
@@ -32,7 +32,7 @@ export function getAnonSupabaseClient() {
 }
 
 export function getServiceSupabaseClient() {
-  if (!hasSupabaseConfig()) {
+  if (!hasSupabaseServiceConfig()) {
     return null;
   }
 
@@ -42,4 +42,3 @@ export function getServiceSupabaseClient() {
 
   return serviceClient;
 }
-

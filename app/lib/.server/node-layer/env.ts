@@ -34,6 +34,14 @@ export const serverEnv = {
   LITECODE_PRO_DAILY_ENHANCER_LIMIT: readNumber('LITECODE_PRO_DAILY_ENHANCER_LIMIT', 300),
 };
 
+export function hasSupabaseAnonConfig() {
+  return Boolean(serverEnv.SUPABASE_URL && serverEnv.SUPABASE_ANON_KEY);
+}
+
+export function hasSupabaseServiceConfig() {
+  return Boolean(serverEnv.SUPABASE_URL && serverEnv.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 export function hasSupabaseConfig() {
-  return Boolean(serverEnv.SUPABASE_URL && serverEnv.SUPABASE_ANON_KEY && serverEnv.SUPABASE_SERVICE_ROLE_KEY);
+  return hasSupabaseAnonConfig() && hasSupabaseServiceConfig();
 }

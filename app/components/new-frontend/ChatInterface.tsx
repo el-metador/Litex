@@ -3,11 +3,13 @@ import { useStore } from '@nanostores/react';
 import { useChat } from 'ai/react';
 import { ArrowLeft, ArrowUp } from 'lucide-react';
 import { diffLines } from 'diff';
+import type { Message } from 'ai';
 import { authStore } from '~/lib/stores/auth';
 import { chatStore } from '~/lib/stores/chat';
 import { fetchWithSupabaseAuth } from '~/lib/supabase/authenticated-fetch';
 import { signInWithGoogle } from '~/lib/supabase/auth.client';
 import { getLlmModelDefinition } from '~/lib/llm/models';
+import { useChatHistory } from '~/lib/persistence/useChatHistory';
 
 interface ChatInterfaceProps {
   initialPrompt: string;
@@ -37,6 +39,39 @@ function timestamp() {
 function extractFirstCodeBlock(content: string) {
   const match = content.match(/```(?:[a-zA-Z0-9_-]+)?\n([\s\S]*?)```/);
   return match ? match[1].trim() : null;
+}
+
+interface BoltFileAction {
+  filePath: string;
+  content: string;
+}
+
+function extractBoltFileActions(content: string): BoltFileAction[] {
+  const actions: BoltFileAction[] = [];
+  const actionRegex = /<boltAction\b([^>]*)>([\s\S]*?)<\/boltAction>/gi;
+  let actionMatch: RegExpExecArray | null;
+
+  while ((actionMatch = actionRegex.exec(content)) !== null) {
+    const attributes = actionMatch[1] ?? '';
+    const typeMatch = attributes.match(/\btype=(['"])(.*?)\1/i);
+
+    if (!typeMatch || typeMatch[2] !== 'file') {
+      continue;
+    }
+
+    const filePathMatch = attributes.match(/\bfilePath=(['"])(.*?)\1/i);
+
+    if (!filePathMatch || !filePathMatch[2]) {
+      continue;
+    }
+
+    actions.push({
+      filePath: filePathMatch[2],
+      content: (actionMatch[2] ?? '').trim(),
+    });
+  }
+
+  return actions;
 }
 
 function extractTextFromMessageParts(parts: unknown) {
@@ -105,6 +140,8 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputFileRef = useRef<HTMLInputElement>(null);
   const lastImportedAssistantMessageIdRef = useRef<string | null>(null);
+  const lastStoredSignatureRef = useRef<string>('');
+  const { initialMessages: historyMessages, ready: historyReady, sessionId, storeMessageHistory } = useChatHistory();
 
   const bootstrappedMessages = useMemo(() => {
     const prompt = initialPrompt.trim();
@@ -148,10 +185,11 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
     throw new Error(errorMessage);
   };
 
-  const { messages, append, isLoading, error, status } = useChat({
+  const { messages, append, isLoading, error, status, setMessages } = useChat({
     api: '/api/chat',
     body: {
       model,
+      sessionId,
     },
     initialMessages: bootstrappedMessages,
     fetch: authenticatedFetch,
@@ -164,18 +202,18 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
 
       setLogs((prev) => [...prev, `[${timestamp()}] Lite Agent получил запрос [requestId: ${requestId}]`]);
     },
-    onFinish: (message, { finishReason }) => {
-      const content = getMessageDisplayContent(message).trim();
-
-      if (!content) {
-        setLogs((prev) => [...prev, `[${timestamp()}] Модель вернула пустой ответ (${finishReason})`]);
-        onToast('Lite Agent получил запрос, но не вернул текст. Попробуйте повторить.');
-        return;
-      }
-
+    onFinish: (_message, { finishReason }) => {
       setLogs((prev) => [...prev, `[${timestamp()}] Lite Agent завершил ответ (${finishReason})`]);
     },
   });
+
+  useEffect(() => {
+    if (!historyReady || historyMessages.length === 0) {
+      return;
+    }
+
+    setMessages(historyMessages);
+  }, [historyReady, historyMessages, setMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -195,12 +233,14 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
     let step = 0;
 
     const timer = window.setInterval(() => {
-      if (step >= steps.length) {
+      const nextStep = steps[step];
+
+      if (!nextStep) {
         window.clearInterval(timer);
         return;
       }
 
-      setLogs((prev) => [...prev, `[${timestamp()}] ${steps[step]}`]);
+      setLogs((prev) => [...prev, `[${timestamp()}] ${nextStep}`]);
       step += 1;
     }, 900);
 
@@ -212,7 +252,8 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
       return;
     }
 
-    setLogs((prev) => [...prev, `[${timestamp()}] Ошибка: ${error.message}`]);
+    const errorMessage = error.message || 'Неизвестная ошибка';
+    setLogs((prev) => [...prev, `[${timestamp()}] Ошибка: ${errorMessage}`]);
   }, [error]);
 
   useEffect(() => {
@@ -224,13 +265,39 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
 
     if (
       lastMessage.role !== 'assistant' ||
-      !lastMessage.content ||
       lastMessage.id === lastImportedAssistantMessageIdRef.current
     ) {
       return;
     }
 
-    const plainText = typeof lastMessage.content === 'string' ? lastMessage.content : JSON.stringify(lastMessage.content);
+    const plainText = getMessageDisplayContent(lastMessage);
+    const boltFileActions = extractBoltFileActions(plainText);
+
+    if (boltFileActions.length > 0) {
+      lastImportedAssistantMessageIdRef.current = lastMessage.id;
+
+      setWorkspaceFiles((prev) => {
+        const nextFiles = { ...prev };
+
+        for (const action of boltFileActions) {
+          nextFiles[action.filePath] = action.content;
+        }
+
+        return nextFiles;
+      });
+
+      setSelectedFile((current) => {
+        if (boltFileActions.some((action) => action.filePath === current)) {
+          return current;
+        }
+
+        return boltFileActions[0].filePath;
+      });
+
+      setLogs((prev) => [...prev, `[${timestamp()}] Обновлены файлы из ответа агента (${boltFileActions.length})`]);
+      return;
+    }
+
     const extractedCode = extractFirstCodeBlock(plainText);
 
     if (!extractedCode) {
@@ -246,6 +313,25 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
 
     setLogs((prev) => [...prev, `[${timestamp()}] Код обновлен в файле ${selectedFile}`]);
   }, [messages, isLoading, selectedFile]);
+
+  useEffect(() => {
+    if (auth.status !== 'authenticated' || isLoading || messages.length === 0) {
+      return;
+    }
+
+    const signature = messages.map((message) => `${message.id}:${message.role}:${getMessageDisplayContent(message)}`).join('|');
+
+    if (!signature || signature === lastStoredSignatureRef.current) {
+      return;
+    }
+
+    lastStoredSignatureRef.current = signature;
+
+    void storeMessageHistory(messages as unknown as Message[]).catch((storeError) => {
+      const message = storeError instanceof Error ? storeError.message : 'Не удалось сохранить историю чата';
+      setLogs((prev) => [...prev, `[${timestamp()}] Ошибка сохранения истории: ${message}`]);
+    });
+  }, [auth.status, isLoading, messages, storeMessageHistory]);
 
   const handleGoogleAuth = async () => {
     if (isAuthLoading) {
@@ -371,7 +457,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
               return (
                 <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div
-                    className={`max-w-[88%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${message.role === 'user' ? 'bg-[#2f2f2f] text-white' : 'text-gray-200 border border-[#2a2a2a]'}`}
+                    className={`max-w-[88%] rounded-2xl px-5 py-3 text-sm leading-relaxed whitespace-pre-wrap ${message.role === 'user' ? 'bg-[#2f2f2f] text-white' : 'text-gray-200 border border-[#2a2a2a]'}`}
                   >
                     {content ? content : !isPendingAssistantMessage ? <span className="text-gray-500">Ответ без текста.</span> : null}
                   </div>

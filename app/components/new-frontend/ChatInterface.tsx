@@ -141,23 +141,8 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
   const inputFileRef = useRef<HTMLInputElement>(null);
   const lastImportedAssistantMessageIdRef = useRef<string | null>(null);
   const lastStoredSignatureRef = useRef<string>('');
+  const initialPromptRequestRef = useRef<string>('');
   const { initialMessages: historyMessages, ready: historyReady, sessionId, storeMessageHistory } = useChatHistory();
-
-  const bootstrappedMessages = useMemo(() => {
-    const prompt = initialPrompt.trim();
-
-    if (!prompt || auth.status !== 'authenticated') {
-      return [];
-    }
-
-    return [
-      {
-        id: `bootstrap-${prompt}`,
-        role: 'user' as const,
-        content: prompt,
-      },
-    ];
-  }, [initialPrompt, auth.status]);
 
   const authenticatedFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const response = await fetchWithSupabaseAuth(input, init);
@@ -191,7 +176,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
       model,
       sessionId,
     },
-    initialMessages: bootstrappedMessages,
+    initialMessages: [],
     fetch: authenticatedFetch,
     onResponse: (response) => {
       const requestId = response.headers.get('x-litecode-request-id');
@@ -214,6 +199,31 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
 
     setMessages(historyMessages);
   }, [historyReady, historyMessages, setMessages]);
+
+  useEffect(() => {
+    const prompt = initialPrompt.trim();
+
+    if (
+      !historyReady ||
+      auth.status !== 'authenticated' ||
+      isLoading ||
+      !prompt ||
+      historyMessages.length > 0 ||
+      messages.length > 0 ||
+      initialPromptRequestRef.current === prompt
+    ) {
+      return;
+    }
+
+    initialPromptRequestRef.current = prompt;
+    setLogs((prev) => [...prev, `[${timestamp()}] Переносим задачу из дашборда в чат`]);
+
+    void append({ role: 'user', content: prompt }).catch((initialError) => {
+      const message = initialError instanceof Error ? initialError.message : 'Не удалось отправить стартовый запрос';
+      setLogs((prev) => [...prev, `[${timestamp()}] Ошибка стартового запроса: ${message}`]);
+      onToast(message);
+    });
+  }, [append, auth.status, historyMessages.length, historyReady, initialPrompt, isLoading, messages.length, onToast]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

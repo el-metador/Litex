@@ -8,6 +8,7 @@ import type { Branch, Repository } from './types';
 
 interface DashboardProps {
   onStartTask: (prompt: string) => void;
+  onOpenChatSession: (sessionId: string) => void;
   showToast: (msg: string) => void;
   repositories: Repository[];
   branches: Branch[];
@@ -33,7 +34,7 @@ function formatDate(value: string) {
   });
 }
 
-export function Dashboard({ onStartTask, showToast }: DashboardProps) {
+export function Dashboard({ onStartTask, onOpenChatSession, showToast }: DashboardProps) {
   const auth = useStore(authStore);
   const [prompt, setPrompt] = useState('');
   const [activeTab, setActiveTab] = useState<'tasks' | 'review' | 'archive'>('tasks');
@@ -303,14 +304,23 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
                   Сообщений: {session.messageCount} · Обновлено: {formatDate(session.lastMessageAt)}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => toggleArchive(session.id, true)}
-                className="self-start sm:self-auto inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
-              >
-                <Archive size={14} />
-                Перенести в архив
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onOpenChatSession(session.id)}
+                  className="self-start sm:self-auto inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
+                >
+                  Открыть чат
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleArchive(session.id, true)}
+                  className="self-start sm:self-auto inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
+                >
+                  <Archive size={14} />
+                  Перенести в архив
+                </button>
+              </div>
             </article>
           ))}
         </section>
@@ -398,13 +408,22 @@ export function Dashboard({ onStartTask, showToast }: DashboardProps) {
                   Сообщений: {session.messageCount} · Завершен: {formatDate(session.lastMessageAt)}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => toggleArchive(session.id, false)}
-                className="self-start sm:self-auto text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
-              >
-                Вернуть в задачи
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onOpenChatSession(session.id)}
+                  className="self-start sm:self-auto text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
+                >
+                  Открыть чат
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleArchive(session.id, false)}
+                  className="self-start sm:self-auto text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
+                >
+                  Вернуть в задачи
+                </button>
+              </div>
             </article>
           ))}
         </section>

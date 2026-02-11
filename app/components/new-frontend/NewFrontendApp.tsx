@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
+import { useLocation, useNavigate } from '@remix-run/react';
 import { Dashboard } from './Dashboard';
 import { ChatInterface } from './ChatInterface';
 import { Navbar } from './Navbar';
@@ -15,8 +16,11 @@ interface NewFrontendAppProps {
 
 export function NewFrontendApp({ repositories, branches }: NewFrontendAppProps) {
   const auth = useStore(authStore);
-  const [currentView, setCurrentView] = useState<ViewState>('dashboard');
-  const [previousView, setPreviousView] = useState<ViewState>('dashboard');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isChatRoute = location.pathname.startsWith('/chat/');
+  const [currentView, setCurrentView] = useState<ViewState>(isChatRoute ? 'chat' : 'dashboard');
+  const [previousView, setPreviousView] = useState<ViewState>(isChatRoute ? 'chat' : 'dashboard');
   const [initialPrompt, setInitialPrompt] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -34,6 +38,17 @@ export function NewFrontendApp({ repositories, branches }: NewFrontendAppProps) 
 
     setInitialPrompt(prompt);
     setCurrentView('chat');
+    navigate('/', { replace: true });
+  };
+
+  const handleOpenChatSession = (sessionId: string) => {
+    if (!sessionId.trim()) {
+      return;
+    }
+
+    setInitialPrompt('');
+    setCurrentView('chat');
+    navigate(`/chat/${sessionId}`);
   };
 
   const handleOpenSettings = () => {
@@ -47,25 +62,53 @@ export function NewFrontendApp({ repositories, branches }: NewFrontendAppProps) 
     setCurrentView(previousView);
   };
 
+  const handleNavigate = (view: ViewState) => {
+    setCurrentView(view);
+
+    if (view === 'settings') {
+      return;
+    }
+
+    if (view === 'chat' && isChatRoute) {
+      return;
+    }
+
+    navigate('/', { replace: true });
+  };
+
   useEffect(() => {
+    if (isChatRoute && currentView !== 'chat') {
+      setCurrentView('chat');
+    }
+
     if (auth.status !== 'authenticated' && currentView === 'chat') {
       setCurrentView('dashboard');
+      navigate('/', { replace: true });
     }
-  }, [auth.status, currentView]);
+  }, [auth.status, currentView, isChatRoute, navigate]);
 
   return (
     <div className="litecode-app min-h-screen bg-[#191919] text-white selection:bg-[#10a37f] selection:text-white">
-      <Navbar currentView={currentView} onNavigate={setCurrentView} onOpenSettings={handleOpenSettings} />
+      <Navbar currentView={currentView} onNavigate={handleNavigate} onOpenSettings={handleOpenSettings} />
 
       <main>
         {currentView === 'dashboard' ? (
-          <Dashboard onStartTask={handleStartTask} showToast={showToast} repositories={repositories} branches={branches} />
+          <Dashboard
+            onStartTask={handleStartTask}
+            onOpenChatSession={handleOpenChatSession}
+            showToast={showToast}
+            repositories={repositories}
+            branches={branches}
+          />
         ) : null}
 
         {currentView === 'chat' ? (
           <ChatInterface
             initialPrompt={initialPrompt}
-            onBack={() => setCurrentView('dashboard')}
+            onBack={() => {
+              setCurrentView('dashboard');
+              navigate('/', { replace: true });
+            }}
             onToast={showToast}
           />
         ) : null}

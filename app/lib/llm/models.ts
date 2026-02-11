@@ -19,7 +19,7 @@ export const LLM_MODELS: LlmModelDefinition[] = [
   },
   {
     id: 'openrouter-free-1',
-    label: 'OpenRouter Free 1',
+    label: 'Lite Agent',
     provider: 'openrouter',
   },
   {

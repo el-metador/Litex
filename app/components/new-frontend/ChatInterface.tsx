@@ -1,26 +1,63 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useStore } from '@nanostores/react';
 import { useChat } from 'ai/react';
-import { ArrowLeft, ArrowUp, Mic, PanelLeftClose, Plus, Share } from 'lucide-react';
+import { ArrowLeft, ArrowUp } from 'lucide-react';
+import { diffLines } from 'diff';
 import { authStore } from '~/lib/stores/auth';
 import { chatStore } from '~/lib/stores/chat';
 import { fetchWithSupabaseAuth } from '~/lib/supabase/authenticated-fetch';
+import { signInWithGoogle } from '~/lib/supabase/auth.client';
+import { getLlmModelDefinition } from '~/lib/llm/models';
 
 interface ChatInterfaceProps {
   initialPrompt: string;
   onBack: () => void;
+  onToast: (message: string) => void;
 }
 
-export function ChatInterface({ initialPrompt, onBack }: ChatInterfaceProps) {
+type ChatPanel = 'discussion' | 'logs' | 'diff' | 'preview';
+
+const PANEL_TITLES: Array<{ id: ChatPanel; label: string }> = [
+  { id: 'discussion', label: 'Обсуждение' },
+  { id: 'logs', label: 'Журнал' },
+  { id: 'diff', label: 'Разница' },
+  { id: 'preview', label: 'Предварительный просмотр' },
+];
+
+const DEFAULT_WORKSPACE_FILES: Record<string, string> = {
+  'app/routes/_index.tsx': `export default function Index() {\n  return <main>Welcome</main>;\n}\n`,
+  'app/components/Button.tsx': `export function Button() {\n  return <button>Click</button>;\n}\n`,
+  'app/styles/app.css': `.page {\n  min-height: 100vh;\n  background: #191919;\n}\n`,
+};
+
+function timestamp() {
+  return new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function extractFirstCodeBlock(content: string) {
+  const match = content.match(/```(?:[a-zA-Z0-9_-]+)?\n([\s\S]*?)```/);
+  return match ? match[1].trim() : null;
+}
+
+export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceProps) {
   const auth = useStore(authStore);
   const { model } = useStore(chatStore);
+  const [activePanel, setActivePanel] = useState<ChatPanel>('discussion');
   const [inputValue, setInputValue] = useState('');
+  const [attachedImages, setAttachedImages] = useState<File[]>([]);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [workspaceFiles, setWorkspaceFiles] = useState<Record<string, string>>(DEFAULT_WORKSPACE_FILES);
+  const [baselineFiles, setBaselineFiles] = useState<Record<string, string>>(DEFAULT_WORKSPACE_FILES);
+  const [selectedFile, setSelectedFile] = useState<string>(Object.keys(DEFAULT_WORKSPACE_FILES)[0]);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputFileRef = useRef<HTMLInputElement>(null);
+  const lastImportedAssistantMessageIdRef = useRef<string | null>(null);
 
   const bootstrappedMessages = useMemo(() => {
     const prompt = initialPrompt.trim();
 
-    if (!prompt) {
+    if (!prompt || auth.status !== 'authenticated') {
       return [];
     }
 
@@ -31,7 +68,7 @@ export function ChatInterface({ initialPrompt, onBack }: ChatInterfaceProps) {
         content: prompt,
       },
     ];
-  }, [initialPrompt]);
+  }, [initialPrompt, auth.status]);
 
   const authenticatedFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const response = await fetchWithSupabaseAuth(input, init);
@@ -70,97 +107,317 @@ export function ChatInterface({ initialPrompt, onBack }: ChatInterfaceProps) {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+  }, [messages, isLoading, activePanel]);
 
-  const handleSend = async () => {
-    const trimmed = inputValue.trim();
-
-    if (!trimmed || isLoading || auth.status !== 'authenticated') {
+  useEffect(() => {
+    if (!isLoading || auth.status !== 'authenticated') {
       return;
     }
 
-    await append({ role: 'user', content: trimmed });
+    const steps = [
+      'Агент анализирует контекст задачи',
+      'Запускает проверку кода и зависимостей',
+      'Готовит план изменений по файлам',
+      'Формирует патч и валидацию',
+    ];
+    let step = 0;
+
+    const timer = window.setInterval(() => {
+      if (step >= steps.length) {
+        window.clearInterval(timer);
+        return;
+      }
+
+      setLogs((prev) => [...prev, `[${timestamp()}] ${steps[step]}`]);
+      step += 1;
+    }, 900);
+
+    return () => window.clearInterval(timer);
+  }, [isLoading, auth.status]);
+
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    setLogs((prev) => [...prev, `[${timestamp()}] Ошибка: ${error.message}`]);
+  }, [error]);
+
+  useEffect(() => {
+    if (isLoading || messages.length === 0) {
+      return;
+    }
+
+    const lastMessage = messages[messages.length - 1];
+
+    if (
+      lastMessage.role !== 'assistant' ||
+      !lastMessage.content ||
+      lastMessage.id === lastImportedAssistantMessageIdRef.current
+    ) {
+      return;
+    }
+
+    const plainText = typeof lastMessage.content === 'string' ? lastMessage.content : JSON.stringify(lastMessage.content);
+    const extractedCode = extractFirstCodeBlock(plainText);
+
+    if (!extractedCode) {
+      return;
+    }
+
+    lastImportedAssistantMessageIdRef.current = lastMessage.id;
+
+    setWorkspaceFiles((prev) => ({
+      ...prev,
+      [selectedFile]: extractedCode,
+    }));
+
+    setLogs((prev) => [...prev, `[${timestamp()}] Код обновлен в файле ${selectedFile}`]);
+  }, [messages, isLoading, selectedFile]);
+
+  const handleGoogleAuth = async () => {
+    if (isAuthLoading) {
+      return;
+    }
+
+    setIsAuthLoading(true);
+
+    try {
+      await signInWithGoogle();
+    } catch (authError) {
+      const message = authError instanceof Error ? authError.message : 'Не удалось начать вход через Google';
+      onToast(message);
+      setIsAuthLoading(false);
+    }
+  };
+
+  const handleAttachImages = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    const images = files.filter((file) => file.type.startsWith('image/'));
+    setAttachedImages(images);
+    event.target.value = '';
+  };
+
+  const handleSend = async () => {
+    if (auth.status !== 'authenticated') {
+      onToast('Чат доступен только после входа через Google.');
+      return;
+    }
+
+    const trimmed = inputValue.trim();
+
+    if (!trimmed || isLoading) {
+      return;
+    }
+
+    const fileSuffix = attachedImages.length > 0 ? `\n\n[Изображения: ${attachedImages.map((file) => file.name).join(', ')}]` : '';
+    const message = `${trimmed}${fileSuffix}`;
+
+    setLogs((prev) => [...prev, `[${timestamp()}] Пользователь отправил запрос`]);
+    await append({ role: 'user', content: message });
     setInputValue('');
+    setAttachedImages([]);
   };
 
   const chatTitle = initialPrompt.trim() || 'Новая задача';
+  const modelLabel = getLlmModelDefinition(model)?.label || 'Lite Agent';
   const canSend = inputValue.trim().length > 0 && auth.status === 'authenticated' && !isLoading;
+
+  const diffOutput = useMemo(() => {
+    const before = baselineFiles[selectedFile] ?? '';
+    const after = workspaceFiles[selectedFile] ?? '';
+
+    return diffLines(before, after);
+  }, [baselineFiles, workspaceFiles, selectedFile]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] bg-[#191919]">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[#3e3e3e] bg-[#191919] min-h-[50px]">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <button onClick={onBack} type="button" className="text-gray-400 hover:text-white transition-colors shrink-0" aria-label="Back to dashboard">
-            <ArrowLeft size={20} />
-          </button>
-
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-medium text-white truncate">{chatTitle}</span>
-            <span className="text-xs text-gray-500 truncate">{model}</span>
+      <div className="px-4 py-2 border-b border-[#3e3e3e] bg-[#191919]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 overflow-hidden min-w-0">
+            <button onClick={onBack} type="button" className="text-gray-400 hover:text-white transition-colors shrink-0" aria-label="Back to dashboard">
+              <ArrowLeft size={20} />
+            </button>
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-medium text-white truncate">{chatTitle}</span>
+              <span className="text-xs text-gray-500 truncate">{modelLabel}</span>
+            </div>
           </div>
+          {auth.status !== 'authenticated' ? (
+            <button
+              type="button"
+              onClick={() => void handleGoogleAuth()}
+              disabled={isAuthLoading}
+              className="px-3 py-1.5 text-xs sm:text-sm rounded-md bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-60"
+            >
+              {isAuthLoading ? 'Вход...' : 'Войти через Google'}
+            </button>
+          ) : null}
         </div>
 
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="hidden md:flex items-center">
-            <button type="button" className="text-sm font-medium text-white px-3 py-1.5 rounded-md bg-[#252525]">
-              Обсуждение
-            </button>
-            <button type="button" className="text-sm font-medium text-gray-500 hover:text-white px-3 py-1.5 rounded-md hover:bg-[#252525] transition-colors">
-              Журналы
-            </button>
+        <div className="mt-3 overflow-x-auto">
+          <div className="inline-flex gap-2 min-w-full sm:min-w-0">
+            {PANEL_TITLES.map((panel) => (
+              <button
+                key={panel.id}
+                type="button"
+                onClick={() => setActivePanel(panel.id)}
+                className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                  activePanel === panel.id ? 'bg-[#252525] text-white border border-[#3e3e3e]' : 'text-gray-400 hover:text-white hover:bg-[#242424]'
+                }`}
+              >
+                {panel.label}
+              </button>
+            ))}
           </div>
-
-          <div className="w-px h-4 bg-[#3e3e3e] hidden md:block" />
-
-          <button type="button" className="text-gray-400 hover:text-white hidden sm:block" aria-label="Share">
-            <Share size={18} />
-          </button>
-
-          <button type="button" className="text-gray-400 hover:text-white" aria-label="Toggle side panel">
-            <PanelLeftClose size={18} />
-          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-        {messages.map((message) => (
-          <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${message.role === 'user' ? 'bg-[#2f2f2f] text-white' : 'text-gray-200'}`}>
-              {typeof message.content === 'string' ? message.content : JSON.stringify(message.content)}
-            </div>
-          </div>
-        ))}
+      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        {activePanel === 'discussion' ? (
+          <div className="space-y-6">
+            {messages.map((message) => (
+              <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[88%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${message.role === 'user' ? 'bg-[#2f2f2f] text-white' : 'text-gray-200 border border-[#2a2a2a]'}`}>
+                  {typeof message.content === 'string' ? message.content : JSON.stringify(message.content)}
+                </div>
+              </div>
+            ))}
 
-        {isLoading ? (
-          <div className="flex justify-start">
-            <div className="flex items-center gap-2 text-xs text-white font-mono bg-[#252525] border border-[#3e3e3e] rounded-md px-3 py-1.5">
-              <div className="w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
-              <span>Assistant is thinking</span>
-            </div>
+            {auth.status !== 'authenticated' ? (
+              <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-4 text-sm text-gray-300">
+                Основной чат доступен только авторизованным пользователям.
+              </div>
+            ) : null}
+
+            {isLoading ? (
+              <div className="flex justify-start">
+                <div className="flex items-center gap-2 text-xs text-white bg-[#252525] border border-[#3e3e3e] rounded-md px-3 py-1.5">
+                  <div className="w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
+                  <span>Lite Agent выполняет задачу</span>
+                </div>
+              </div>
+            ) : null}
+
+            {error ? (
+              <div className="text-sm text-red-300 bg-red-950/30 border border-red-800 rounded-lg p-3">
+                {error.message}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
-        {error ? (
-          <div className="text-sm text-red-300 bg-red-950/30 border border-red-800 rounded-lg p-3">
-            {error.message}
+        {activePanel === 'logs' ? (
+          <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-4 space-y-2">
+            {logs.length === 0 ? <p className="text-sm text-gray-400">Журнал пока пуст. Отправьте запрос агенту.</p> : null}
+            {logs.map((entry, index) => (
+              <p key={`${entry}-${index}`} className="text-xs sm:text-sm text-gray-200 font-mono break-words">
+                {entry}
+              </p>
+            ))}
+          </div>
+        ) : null}
+
+        {activePanel === 'diff' ? (
+          <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <h3 className="text-sm font-medium text-white">Diff по файлу: {selectedFile}</h3>
+              <button
+                type="button"
+                onClick={() => setBaselineFiles(workspaceFiles)}
+                className="px-3 py-1.5 text-xs rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f]"
+              >
+                Принять текущую версию как базу
+              </button>
+            </div>
+
+            <pre className="text-xs leading-5 whitespace-pre-wrap overflow-x-auto">
+              {diffOutput.map((part, index) => {
+                const prefix = part.added ? '+ ' : part.removed ? '- ' : '  ';
+                const className = part.added ? 'text-green-300' : part.removed ? 'text-red-300' : 'text-gray-300';
+
+                return (
+                  <span key={`${prefix}-${index}`} className={className}>
+                    {part.value
+                      .split('\n')
+                      .filter(Boolean)
+                      .map((line, lineIndex) => (
+                        <span key={`${index}-${lineIndex}`} className="block">
+                          {prefix}
+                          {line}
+                        </span>
+                      ))}
+                  </span>
+                );
+              })}
+            </pre>
+          </div>
+        ) : null}
+
+        {activePanel === 'preview' ? (
+          <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl overflow-hidden">
+            <div className="flex flex-col md:flex-row min-h-[380px]">
+              <aside className="md:w-64 border-b md:border-b-0 md:border-r border-[#3e3e3e] p-3 space-y-1">
+                {Object.keys(workspaceFiles).map((path) => (
+                  <button
+                    key={path}
+                    type="button"
+                    onClick={() => setSelectedFile(path)}
+                    className={`w-full text-left text-xs px-2 py-1.5 rounded-md transition-colors ${
+                      selectedFile === path ? 'bg-[#1f1f1f] text-white border border-[#3e3e3e]' : 'text-gray-300 hover:bg-[#2f2f2f]'
+                    }`}
+                  >
+                    {path}
+                  </button>
+                ))}
+              </aside>
+
+              <div className="flex-1 p-3">
+                <textarea
+                  value={workspaceFiles[selectedFile] || ''}
+                  onChange={(event) =>
+                    setWorkspaceFiles((prev) => ({
+                      ...prev,
+                      [selectedFile]: event.target.value,
+                    }))
+                  }
+                  className="w-full min-h-[320px] bg-[#191919] border border-[#3e3e3e] rounded-lg p-3 text-xs font-mono text-gray-200 outline-none resize-y"
+                />
+              </div>
+            </div>
           </div>
         ) : null}
 
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 bg-[#191919]">
-        <div className="max-w-3xl mx-auto bg-[#252525] rounded-full border border-[#3e3e3e] flex items-center p-2 shadow-lg focus-within:border-gray-500 transition-all">
-          <button type="button" className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors ml-1" aria-label="Attach">
-            <Plus size={22} />
+      <div className="p-4 bg-[#191919] border-t border-[#252525]">
+        <div className="max-w-4xl mx-auto bg-[#252525] rounded-2xl border border-[#3e3e3e] flex items-center p-2 gap-2 shadow-lg">
+          <input
+            ref={inputFileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleAttachImages}
+          />
+
+          <button
+            type="button"
+            onClick={() => inputFileRef.current?.click()}
+            disabled={auth.status !== 'authenticated'}
+            className="px-3 py-2 text-sm rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40"
+          >
+            +
           </button>
 
           <input
             type="text"
             value={inputValue}
             onChange={(event) => setInputValue(event.target.value)}
-            placeholder={auth.status === 'authenticated' ? 'Запросить изменения или задать вопрос...' : 'Войдите в аккаунт, чтобы отправлять сообщения'}
-            className="flex-1 bg-transparent text-white px-3 outline-none placeholder-gray-500 text-base"
+            placeholder={auth.status === 'authenticated' ? 'Запросить изменения или задать вопрос...' : 'Войдите через Google, чтобы писать в чат'}
+            className="flex-1 bg-transparent text-white px-2 outline-none placeholder-gray-500 text-sm sm:text-base disabled:opacity-60"
+            disabled={auth.status !== 'authenticated'}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 void handleSend();
@@ -168,11 +425,7 @@ export function ChatInterface({ initialPrompt, onBack }: ChatInterfaceProps) {
             }}
           />
 
-          <div className="flex items-center gap-1 pr-1">
-            <button type="button" className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors" aria-label="Voice input">
-              <Mic size={20} />
-            </button>
-
+          {auth.status === 'authenticated' ? (
             <button
               type="button"
               onClick={() => void handleSend()}
@@ -182,11 +435,30 @@ export function ChatInterface({ initialPrompt, onBack }: ChatInterfaceProps) {
             >
               <ArrowUp size={20} />
             </button>
-          </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void handleGoogleAuth()}
+              disabled={isAuthLoading}
+              className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-60"
+            >
+              {isAuthLoading ? 'Вход...' : 'Войти через Google'}
+            </button>
+          )}
         </div>
 
+        {attachedImages.length > 0 ? (
+          <div className="max-w-4xl mx-auto mt-2 flex flex-wrap gap-2">
+            {attachedImages.map((file) => (
+              <span key={file.name} className="text-xs px-2 py-1 rounded-md bg-[#1f1f1f] border border-[#3e3e3e] text-gray-200">
+                {file.name}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
         <div className="text-center mt-3">
-          <span className="text-[11px] text-gray-500">LiteCode может допускать ошибки. Проверяйте важную информацию.</span>
+          <span className="text-[11px] text-gray-500">Lite Agent может ошибаться. Проверяйте критичные изменения перед деплоем.</span>
         </div>
       </div>
     </div>

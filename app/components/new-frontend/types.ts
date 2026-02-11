@@ -15,7 +15,6 @@ export type SettingsTab =
   | 'general'
   | 'environments'
   | 'code_review'
-  | 'connectors'
   | 'usage'
   | 'analytics'
   | 'data_controls'

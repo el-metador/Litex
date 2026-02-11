@@ -66,3 +66,22 @@ export async function initSupabaseAuthSync() {
 export function authIsReady() {
   return authStore.get().status !== 'loading';
 }
+
+export async function signInWithGoogle() {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    throw new Error('Google auth недоступен: проверьте Supabase env переменные.');
+  }
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}

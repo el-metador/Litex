@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { Dashboard } from './Dashboard';
 import { ChatInterface } from './ChatInterface';
@@ -20,38 +20,20 @@ export function NewFrontendApp({ repositories, branches }: NewFrontendAppProps) 
   const [initialPrompt, setInitialPrompt] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const availableRepositories = useMemo(() => {
-    if (repositories.length > 0) {
-      return repositories;
-    }
-
-    const fallbackOwner = auth.userId || 'workspace';
-
-    return [
-      {
-        id: 'default-repo',
-        owner: fallbackOwner,
-        name: 'LiteCode',
-      },
-    ];
-  }, [repositories, auth.userId]);
-
-  const availableBranches = useMemo(() => {
-    if (branches.length > 0) {
-      return branches;
-    }
-
-    return [{ id: 'main', name: 'main' }];
-  }, [branches]);
-
-  const handleStartTask = (prompt: string) => {
-    setInitialPrompt(prompt);
-    setCurrentView('chat');
-  };
-
   const showToast = (message: string) => {
     setToastMessage(message);
     window.setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleStartTask = (prompt: string) => {
+    if (auth.status !== 'authenticated') {
+      showToast('Чтобы начать чат с агентом, войдите через Google.');
+      setCurrentView('dashboard');
+      return;
+    }
+
+    setInitialPrompt(prompt);
+    setCurrentView('chat');
   };
 
   const handleOpenSettings = () => {
@@ -65,22 +47,27 @@ export function NewFrontendApp({ repositories, branches }: NewFrontendAppProps) 
     setCurrentView(previousView);
   };
 
+  useEffect(() => {
+    if (auth.status !== 'authenticated' && currentView === 'chat') {
+      setCurrentView('dashboard');
+    }
+  }, [auth.status, currentView]);
+
   return (
-    <div className="min-h-screen bg-[#191919] text-white font-sans selection:bg-[#10a37f] selection:text-white">
+    <div className="min-h-screen bg-[#191919] text-white selection:bg-[#10a37f] selection:text-white">
       <Navbar currentView={currentView} onNavigate={setCurrentView} onOpenSettings={handleOpenSettings} />
 
       <main>
         {currentView === 'dashboard' ? (
-          <Dashboard
-            onStartTask={handleStartTask}
-            showToast={showToast}
-            repositories={availableRepositories}
-            branches={availableBranches}
-          />
+          <Dashboard onStartTask={handleStartTask} showToast={showToast} repositories={repositories} branches={branches} />
         ) : null}
 
         {currentView === 'chat' ? (
-          <ChatInterface initialPrompt={initialPrompt} onBack={() => setCurrentView('dashboard')} />
+          <ChatInterface
+            initialPrompt={initialPrompt}
+            onBack={() => setCurrentView('dashboard')}
+            onToast={showToast}
+          />
         ) : null}
 
         {currentView === 'settings' ? <Settings onClose={handleCloseSettings} /> : null}

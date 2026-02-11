@@ -1,26 +1,29 @@
-import { json, type MetaFunction } from '@remix-run/node';
-import { ClientOnly } from 'remix-utils/client-only';
-import { BaseChat } from '~/components/chat/BaseChat';
-import { Chat } from '~/components/chat/Chat.client';
-import { Header } from '~/components/header/Header';
+import { json, type LoaderFunctionArgs, type MetaFunction } from '@remix-run/node';
+import { useLoaderData } from '@remix-run/react';
+import { NewFrontendApp } from '~/components/new-frontend/NewFrontendApp.client';
+import { buildNewFrontendBootstrap } from '~/lib/new-frontend.server';
 
 export const meta: MetaFunction = () => {
   return [
-    { title: 'Lite Agent - Codex Style Workspace' },
+    { title: 'LiteCode - AI Workspace' },
     {
       name: 'description',
-      content: 'Build and refine code with Lite Agent in a Codex-inspired dark workspace.',
+      content: 'LiteCode workspace with dashboard, chat, and settings for AI-assisted development.',
     },
   ];
 };
 
-export const loader = () => json({});
+export async function loader({ request }: LoaderFunctionArgs) {
+  const { repositories, branches } = await buildNewFrontendBootstrap(request);
+
+  return json({ repositories, branches });
+}
 
 export default function Index() {
-  return (
-    <div className="flex flex-col h-full w-full">
-      <Header />
-      <ClientOnly fallback={<BaseChat />}>{() => <Chat />}</ClientOnly>
-    </div>
-  );
+  const data = useLoaderData<{
+    repositories: Array<{ id: string; name: string; owner: string }>;
+    branches: Array<{ id: string; name: string }>;
+  }>();
+
+  return <NewFrontendApp repositories={data.repositories} branches={data.branches} />;
 }

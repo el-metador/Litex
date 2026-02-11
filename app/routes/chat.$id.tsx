@@ -1,8 +1,15 @@
 import { json, type LoaderFunctionArgs } from '@remix-run/node';
-import { default as IndexRoute } from './_index';
+import { buildNewFrontendBootstrap } from '~/lib/new-frontend.server';
+import IndexRoute from './_index';
 
 export async function loader(args: LoaderFunctionArgs) {
-  return json({ id: args.params.id });
+  const { repositories, branches } = await buildNewFrontendBootstrap(args.request);
+
+  return json({
+    id: args.params.id,
+    repositories,
+    branches,
+  });
 }
 
 export default IndexRoute;

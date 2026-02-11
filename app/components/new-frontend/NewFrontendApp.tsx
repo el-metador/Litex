@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { useLocation, useNavigate } from '@remix-run/react';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { motionVariants } from '~/lib/motion/config';
+import { authStore } from '~/lib/stores/auth';
+import { AppLayout } from './AppLayout';
 import { Dashboard } from './Dashboard';
 import { ChatInterface } from './ChatInterface';
 import { Navbar } from './Navbar';
 import { Settings } from './Settings';
 import { Toast } from './Toast';
 import type { Branch, Repository, ViewState } from './types';
-import { authStore } from '~/lib/stores/auth';
 
 interface NewFrontendAppProps {
   repositories: Repository[];
@@ -18,11 +21,14 @@ export function NewFrontendApp({ repositories, branches }: NewFrontendAppProps) 
   const auth = useStore(authStore);
   const location = useLocation();
   const navigate = useNavigate();
+  const reduceMotion = useReducedMotion();
   const isChatRoute = location.pathname.startsWith('/chat/');
   const [currentView, setCurrentView] = useState<ViewState>(isChatRoute ? 'chat' : 'dashboard');
   const [previousView, setPreviousView] = useState<ViewState>(isChatRoute ? 'chat' : 'dashboard');
   const [initialPrompt, setInitialPrompt] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const activeView = currentView === 'settings' ? previousView : currentView;
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -52,10 +58,12 @@ export function NewFrontendApp({ repositories, branches }: NewFrontendAppProps) 
   };
 
   const handleOpenSettings = () => {
-    if (currentView !== 'settings') {
-      setPreviousView(currentView);
-      setCurrentView('settings');
+    if (currentView === 'settings') {
+      return;
     }
+
+    setPreviousView(activeView);
+    setCurrentView('settings');
   };
 
   const handleCloseSettings = () => {
@@ -63,11 +71,12 @@ export function NewFrontendApp({ repositories, branches }: NewFrontendAppProps) 
   };
 
   const handleNavigate = (view: ViewState) => {
-    setCurrentView(view);
-
     if (view === 'settings') {
+      handleOpenSettings();
       return;
     }
+
+    setCurrentView(view);
 
     if (view === 'chat' && isChatRoute) {
       return;
@@ -77,46 +86,75 @@ export function NewFrontendApp({ repositories, branches }: NewFrontendAppProps) 
   };
 
   useEffect(() => {
-    if (isChatRoute && currentView !== 'chat') {
-      setCurrentView('chat');
+    if (isChatRoute && activeView !== 'chat') {
+      if (currentView === 'settings') {
+        setPreviousView('chat');
+      } else {
+        setCurrentView('chat');
+      }
     }
 
-    if (auth.status !== 'authenticated' && currentView === 'chat') {
-      setCurrentView('dashboard');
+    if (auth.status !== 'authenticated' && activeView === 'chat') {
+      if (currentView === 'settings') {
+        setPreviousView('dashboard');
+      } else {
+        setCurrentView('dashboard');
+      }
+
       navigate('/', { replace: true });
     }
-  }, [auth.status, currentView, isChatRoute, navigate]);
+  }, [activeView, auth.status, currentView, isChatRoute, navigate]);
+
+  const viewVariants = reduceMotion ? motionVariants.pageReduced : motionVariants.page;
 
   return (
-    <div className="litecode-app min-h-screen bg-[#191919] text-white selection:bg-[#10a37f] selection:text-white">
-      <Navbar currentView={currentView} onNavigate={handleNavigate} onOpenSettings={handleOpenSettings} />
-
-      <main>
-        {currentView === 'dashboard' ? (
-          <Dashboard
-            onStartTask={handleStartTask}
-            onOpenChatSession={handleOpenChatSession}
-            showToast={showToast}
-            repositories={repositories}
-            branches={branches}
-          />
-        ) : null}
-
-        {currentView === 'chat' ? (
-          <ChatInterface
-            initialPrompt={initialPrompt}
-            onBack={() => {
-              setCurrentView('dashboard');
-              navigate('/', { replace: true });
-            }}
-            onToast={showToast}
-          />
-        ) : null}
-
-        {currentView === 'settings' ? <Settings onClose={handleCloseSettings} /> : null}
-      </main>
-
-      <Toast message={toastMessage || ''} isVisible={Boolean(toastMessage)} onClose={() => setToastMessage(null)} />
-    </div>
+    <AppLayout
+      navbar={<Navbar currentView={activeView} onNavigate={handleNavigate} onOpenSettings={handleOpenSettings} />}
+      overlays={
+        <AnimatePresence initial={false} mode="wait">
+          {currentView === 'settings' ? <Settings key="settings" onClose={handleCloseSettings} /> : null}
+        </AnimatePresence>
+      }
+      toast={<Toast message={toastMessage || ''} isVisible={Boolean(toastMessage)} onClose={() => setToastMessage(null)} />}
+    >
+      <AnimatePresence initial={false} mode="wait">
+        {activeView === 'dashboard' ? (
+          <m.section
+            key="dashboard"
+            variants={viewVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="ui-motion-layer"
+          >
+            <Dashboard
+              onStartTask={handleStartTask}
+              onOpenChatSession={handleOpenChatSession}
+              showToast={showToast}
+              repositories={repositories}
+              branches={branches}
+            />
+          </m.section>
+        ) : (
+          <m.section
+            key={`chat-${location.pathname}`}
+            variants={viewVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="ui-motion-layer"
+          >
+            <ChatInterface
+              initialPrompt={initialPrompt}
+              onBack={() => {
+                setCurrentView('dashboard');
+                navigate('/', { replace: true });
+              }}
+              onToast={showToast}
+            />
+          </m.section>
+        )}
+      </AnimatePresence>
+    </AppLayout>
   );
 }

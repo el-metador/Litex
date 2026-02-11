@@ -12,6 +12,8 @@ import { AuthBootstrap } from './components/auth/AuthBootstrap.client';
 import reactToastifyStyles from 'react-toastify/dist/ReactToastify.css?url';
 import globalStyles from './styles/index.scss?url';
 import xtermStyles from '@xterm/xterm/css/xterm.css?url';
+import { MotionProvider } from './components/ui/MotionProvider';
+import { PageTransition } from './components/ui/PageTransition';
 
 import 'virtual:uno.css';
 
@@ -82,7 +84,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <MotionProvider>
+      <PageTransition>
+        <Outlet />
+      </PageTransition>
+    </MotionProvider>
+  );
 }
 
 export function ErrorBoundary() {

@@ -1,0 +1,9 @@
+node_modules
+build
+.cache
+.vercel
+.env
+.env.*
+!.env.example
+coverage
+dist

@@ -4,6 +4,8 @@ import { useChat } from 'ai/react';
 import { ArrowLeft, ArrowUp } from 'lucide-react';
 import { diffLines } from 'diff';
 import type { Message } from 'ai';
+import { Button } from '~/components/ui/Button';
+import { Card } from '~/components/ui/Card';
 import { authStore } from '~/lib/stores/auth';
 import { chatStore } from '~/lib/stores/chat';
 import { fetchWithSupabaseAuth } from '~/lib/supabase/authenticated-fetch';
@@ -273,10 +275,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
 
     const lastMessage = messages[messages.length - 1];
 
-    if (
-      lastMessage.role !== 'assistant' ||
-      lastMessage.id === lastImportedAssistantMessageIdRef.current
-    ) {
+    if (lastMessage.role !== 'assistant' || lastMessage.id === lastImportedAssistantMessageIdRef.current) {
       return;
     }
 
@@ -408,58 +407,46 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
   }, [baselineFiles, workspaceFiles, selectedFile]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)] bg-[#191919]">
-      <div className="px-4 py-2 border-b border-[#3e3e3e] bg-[#191919]">
+    <div className="mx-2 mt-2 flex h-[calc(100vh-84px)] flex-col rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] elevation-2">
+      <header className="border-b border-white/10 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 overflow-hidden min-w-0">
-            <button
-              onClick={onBack}
-              type="button"
-              className="text-gray-400 hover:text-white transition-colors shrink-0 bg-transparent border-none appearance-none"
-              aria-label="Back to dashboard"
-            >
+          <div className="min-w-0 flex items-center gap-3">
+            <Button onClick={onBack} type="button" variant="ghost" size="icon" aria-label="Back to dashboard">
               <ArrowLeft size={20} />
-            </button>
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium text-white truncate">{chatTitle}</span>
-              <span className="text-xs text-gray-500 truncate">{modelLabel}</span>
+            </Button>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-medium text-white">{chatTitle}</div>
+              <div className="truncate text-xs text-gray-400">{modelLabel}</div>
             </div>
           </div>
           {auth.status !== 'authenticated' ? (
-            <button
-              type="button"
-              onClick={() => void handleGoogleAuth()}
-              disabled={isAuthLoading}
-              className="px-3 py-1.5 text-xs sm:text-sm rounded-md bg-white text-black hover:bg-gray-200 transition-colors disabled:opacity-60 border-none appearance-none"
-            >
+            <Button type="button" variant="primary" size="sm" onClick={() => void handleGoogleAuth()} disabled={isAuthLoading}>
               {isAuthLoading ? 'Вход...' : 'Войти через Google'}
-            </button>
+            </Button>
           ) : null}
         </div>
 
         <div className="mt-3 overflow-x-auto">
-          <div className="inline-flex gap-2 min-w-full sm:min-w-0">
+          <div className="inline-flex min-w-full gap-2 sm:min-w-0">
             {PANEL_TITLES.map((panel) => (
-              <button
+              <Button
                 key={panel.id}
                 type="button"
+                variant={activePanel === panel.id ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setActivePanel(panel.id)}
-                className={`px-3 py-1.5 rounded-md text-xs sm:text-sm transition-colors whitespace-nowrap appearance-none ${
-                  activePanel === panel.id
-                    ? 'bg-[#252525] text-white border border-[#3e3e3e]'
-                    : 'bg-transparent text-gray-400 hover:text-white hover:bg-[#242424]'
-                }`}
+                className="whitespace-nowrap"
               >
                 {panel.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
-      </div>
+      </header>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
         {activePanel === 'discussion' ? (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {messages.map((message, index) => {
               const content = getMessageDisplayContent(message);
               const isPendingAssistantMessage = isLoading && message.role === 'assistant' && index === messages.length - 1 && !content;
@@ -467,7 +454,11 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
               return (
                 <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div
-                    className={`max-w-[88%] rounded-2xl px-5 py-3 text-sm leading-relaxed whitespace-pre-wrap ${message.role === 'user' ? 'bg-[#2f2f2f] text-white' : 'text-gray-200 border border-[#2a2a2a]'}`}
+                    className={`max-w-[88%] whitespace-pre-wrap rounded-[var(--radius-lg)] border px-5 py-3 text-sm leading-relaxed ${
+                      message.role === 'user'
+                        ? 'border-white/16 bg-white/12 text-white elevation-2'
+                        : 'border-white/10 bg-[rgba(0,0,0,0.14)] text-gray-100 elevation-1'
+                    }`}
                   >
                     {content ? content : !isPendingAssistantMessage ? <span className="text-gray-500">Ответ без текста.</span> : null}
                   </div>
@@ -476,60 +467,51 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
             })}
 
             {auth.status !== 'authenticated' ? (
-              <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-4 text-sm text-gray-300">
+              <Card elevation={1} className="p-4 text-sm text-gray-300">
                 Основной чат доступен только авторизованным пользователям.
-              </div>
+              </Card>
             ) : null}
 
             {isAwaitingResponse ? (
-              <div className="flex justify-start">
-                <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl px-4 py-3 text-white min-w-[240px]">
-                  <div className="text-xs text-gray-200">{responseStatusLabel}</div>
-                  <div className="mt-2 flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-[#10a37f] animate-pulse" />
-                    <span className="h-2 w-2 rounded-full bg-[#10a37f] animate-pulse" style={{ animationDelay: '180ms' }} />
-                    <span className="h-2 w-2 rounded-full bg-[#10a37f] animate-pulse" style={{ animationDelay: '360ms' }} />
-                  </div>
-                  <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                    <div className="h-full w-1/3 rounded-full bg-[#10a37f] animate-pulse" />
-                  </div>
+              <Card elevation={2} className="min-w-[240px] max-w-[420px] p-4">
+                <div className="text-xs text-gray-200">{responseStatusLabel}</div>
+                <div className="mt-3 space-y-2">
+                  <div className="skeleton skeleton-line w-4/5" />
+                  <div className="skeleton skeleton-line w-3/5" />
+                  <div className="skeleton skeleton-line w-2/5" />
                 </div>
-              </div>
+              </Card>
             ) : null}
 
             {error ? (
-              <div className="text-sm text-red-300 bg-red-950/30 border border-red-800 rounded-lg p-3">
+              <Card elevation={1} className="border-red-800 bg-red-950/30 p-3 text-sm text-red-300">
                 {error.message}
-              </div>
+              </Card>
             ) : null}
           </div>
         ) : null}
 
         {activePanel === 'logs' ? (
-          <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-4 space-y-2">
+          <Card elevation={1} className="space-y-2 p-4">
             {logs.length === 0 ? <p className="text-sm text-gray-400">Журнал пока пуст. Отправьте запрос агенту.</p> : null}
             {logs.map((entry, index) => (
-              <p key={`${entry}-${index}`} className="text-xs sm:text-sm text-gray-200 font-mono break-words">
+              <p key={`${entry}-${index}`} className="break-words font-mono text-xs text-gray-200 sm:text-sm">
                 {entry}
               </p>
             ))}
-          </div>
+          </Card>
         ) : null}
 
         {activePanel === 'diff' ? (
-          <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <Card elevation={1} className="p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-medium text-white">Diff по файлу: {selectedFile}</h3>
-              <button
-                type="button"
-                onClick={() => setBaselineFiles(workspaceFiles)}
-                className="px-3 py-1.5 text-xs rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] appearance-none bg-transparent"
-              >
+              <Button type="button" variant="secondary" size="sm" onClick={() => setBaselineFiles(workspaceFiles)}>
                 Принять текущую версию как базу
-              </button>
+              </Button>
             </div>
 
-            <pre className="text-xs leading-5 whitespace-pre-wrap overflow-x-auto">
+            <pre className="overflow-x-auto whitespace-pre-wrap text-xs leading-5">
               {diffOutput.map((part, index) => {
                 const prefix = part.added ? '+ ' : part.removed ? '- ' : '  ';
                 const className = part.added ? 'text-green-300' : part.removed ? 'text-red-300' : 'text-gray-300';
@@ -549,24 +531,24 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
                 );
               })}
             </pre>
-          </div>
+          </Card>
         ) : null}
 
         {activePanel === 'preview' ? (
-          <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl overflow-hidden">
-            <div className="flex flex-col md:flex-row min-h-[380px]">
-              <aside className="md:w-64 border-b md:border-b-0 md:border-r border-[#3e3e3e] p-3 space-y-1">
+          <Card elevation={1} className="overflow-hidden">
+            <div className="flex min-h-[380px] flex-col md:flex-row">
+              <aside className="space-y-1 border-b border-white/10 p-3 md:w-64 md:border-b-0 md:border-r">
                 {Object.keys(workspaceFiles).map((path) => (
-                  <button
+                  <Button
                     key={path}
                     type="button"
+                    variant={selectedFile === path ? 'secondary' : 'ghost'}
+                    size="sm"
                     onClick={() => setSelectedFile(path)}
-                    className={`w-full text-left text-xs px-2 py-1.5 rounded-md transition-colors appearance-none ${
-                      selectedFile === path ? 'bg-[#1f1f1f] text-white border border-[#3e3e3e]' : 'text-gray-300 hover:bg-[#2f2f2f]'
-                    }`}
+                    className="w-full justify-start text-left"
                   >
                     {path}
-                  </button>
+                  </Button>
                 ))}
               </aside>
 
@@ -579,18 +561,18 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
                       [selectedFile]: event.target.value,
                     }))
                   }
-                  className="w-full min-h-[320px] bg-[#191919] border border-[#3e3e3e] rounded-lg p-3 text-xs font-mono text-gray-200 outline-none resize-y appearance-none"
+                  className="ui-focus-ring min-h-[320px] w-full resize-y rounded-[var(--radius-md)] border border-white/10 bg-[rgba(0,0,0,0.25)] p-3 font-mono text-xs text-gray-200 outline-none"
                 />
               </div>
             </div>
-          </div>
+          </Card>
         ) : null}
 
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 bg-[#191919] border-t border-[#252525]">
-        <div className="max-w-4xl mx-auto bg-[#252525] rounded-2xl border border-[#3e3e3e] flex items-center p-2 gap-2 shadow-lg">
+      <footer className="border-t border-white/10 p-4">
+        <Card elevation={2} className="mx-auto flex max-w-4xl items-center gap-2 p-2">
           <input
             ref={inputFileRef}
             type="file"
@@ -600,21 +582,27 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
             onChange={handleAttachImages}
           />
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => inputFileRef.current?.click()}
             disabled={auth.status !== 'authenticated'}
-            className="px-3 py-2 text-sm rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40 bg-transparent border-none appearance-none"
+            aria-label="Прикрепить изображение"
           >
             +
-          </button>
+          </Button>
 
           <input
             type="text"
             value={inputValue}
             onChange={(event) => setInputValue(event.target.value)}
-            placeholder={auth.status === 'authenticated' ? 'Запросить изменения или задать вопрос...' : 'Войдите через Google, чтобы писать в чат'}
-            className="flex-1 bg-transparent text-white px-2 outline-none placeholder-gray-500 text-sm sm:text-base disabled:opacity-100 disabled:bg-transparent disabled:text-gray-400 appearance-none"
+            placeholder={
+              auth.status === 'authenticated'
+                ? 'Запросить изменения или задать вопрос...'
+                : 'Войдите через Google, чтобы писать в чат'
+            }
+            className="ui-focus-ring flex-1 rounded-[var(--radius-md)] border border-transparent bg-transparent px-2 py-2 text-sm text-white outline-none placeholder-gray-500 disabled:bg-transparent disabled:text-gray-400 disabled:opacity-100 sm:text-base"
             disabled={auth.status !== 'authenticated'}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -624,41 +612,33 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
           />
 
           {auth.status === 'authenticated' ? (
-            <button
-              type="button"
-              onClick={() => void handleSend()}
-              disabled={!canSend}
-              className={`p-2 rounded-full transition-all duration-200 border-none appearance-none ${canSend ? 'bg-white text-black hover:bg-gray-200' : 'bg-[#333] text-gray-500 cursor-not-allowed'}`}
-              aria-label="Send"
-            >
+            <Button type="button" variant="primary" size="icon" onClick={() => void handleSend()} disabled={!canSend} aria-label="Send">
               <ArrowUp size={20} />
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
-              onClick={() => void handleGoogleAuth()}
-              disabled={isAuthLoading}
-              className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-60 border-none appearance-none"
-            >
+            <Button type="button" variant="primary" size="md" onClick={() => void handleGoogleAuth()} disabled={isAuthLoading}>
               {isAuthLoading ? 'Вход...' : 'Войти через Google'}
-            </button>
+            </Button>
           )}
-        </div>
+        </Card>
 
         {attachedImages.length > 0 ? (
-          <div className="max-w-4xl mx-auto mt-2 flex flex-wrap gap-2">
+          <div className="mx-auto mt-2 flex max-w-4xl flex-wrap gap-2">
             {attachedImages.map((file) => (
-              <span key={file.name} className="text-xs px-2 py-1 rounded-md bg-[#1f1f1f] border border-[#3e3e3e] text-gray-200">
+              <span
+                key={file.name}
+                className="rounded-[var(--radius-sm)] border border-white/12 bg-[rgba(255,255,255,0.06)] px-2 py-1 text-xs text-gray-200"
+              >
                 {file.name}
               </span>
             ))}
           </div>
         ) : null}
 
-        <div className="text-center mt-3">
+        <div className="mt-3 text-center">
           <span className="text-[11px] text-gray-500">Lite Agent может ошибаться. Проверяйте критичные изменения перед деплоем.</span>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

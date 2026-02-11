@@ -1,4 +1,6 @@
 import { CheckCircle2 } from 'lucide-react';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { motionVariants } from '~/lib/motion/config';
 
 interface ToastProps {
   message: string;
@@ -7,20 +9,29 @@ interface ToastProps {
 }
 
 export function Toast({ message, isVisible, onClose }: ToastProps) {
-  if (!isVisible) {
-    return null;
-  }
+  const reduceMotion = useReducedMotion();
 
   return (
-    <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2">
-      <button
-        type="button"
-        onClick={onClose}
-        className="bg-[#10a37f] text-white px-4 py-3 rounded-md shadow-lg flex items-center gap-3 min-w-[280px] border-none appearance-none"
-      >
-        <CheckCircle2 size={20} />
-        <span className="font-medium text-sm text-left">{message}</span>
-      </button>
-    </div>
+    <AnimatePresence>
+      {isVisible ? (
+        <m.div
+          key="toast"
+          variants={reduceMotion ? motionVariants.toastReduced : motionVariants.toast}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="pointer-events-none fixed left-1/2 top-5 z-[80] -translate-x-1/2"
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            className="ui-focus-ring pointer-events-auto flex min-w-[280px] items-center gap-3 rounded-[var(--radius-md)] border border-[#34c89f]/28 bg-[#10a37f] px-4 py-3 text-white elevation-4"
+          >
+            <CheckCircle2 size={20} />
+            <span className="text-left text-sm font-medium">{message}</span>
+          </button>
+        </m.div>
+      ) : null}
+    </AnimatePresence>
   );
 }

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { ArrowUp, Archive, CheckCircle2, Search, ShieldAlert } from 'lucide-react';
 import { useStore } from '@nanostores/react';
+import { Button } from '~/components/ui/Button';
+import { Card } from '~/components/ui/Card';
 import { authStore } from '~/lib/stores/auth';
 import { fetchWithSupabaseAuth } from '~/lib/supabase/authenticated-fetch';
 import { signInWithGoogle } from '~/lib/supabase/auth.client';
@@ -164,17 +166,17 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 pt-10 pb-20 md:pt-24">
-      <h1 className="text-3xl md:text-5xl font-medium text-center text-white mb-10 tracking-tight leading-tight">
+    <div className="mx-auto max-w-4xl px-4 pb-20 pt-10 md:pt-16">
+      <h1 className="mb-10 text-center text-3xl font-semibold leading-tight tracking-tight text-white md:text-5xl">
         Что теперь будем
         <br />
         программировать?
       </h1>
 
-      <div className="bg-[#252525] rounded-3xl border border-[#3e3e3e] shadow-2xl mb-10 transition-all overflow-hidden">
-        <div className="px-5 pt-4 pb-2">
+      <Card elevation={3} className="mb-10 rounded-[calc(var(--radius-lg)+6px)]">
+        <div className="px-5 pb-2 pt-4">
           <textarea
-            className="w-full bg-transparent text-white text-lg placeholder-gray-500 resize-none outline-none min-h-[70px] disabled:opacity-100 disabled:bg-transparent disabled:text-gray-400 appearance-none"
+            className="ui-focus-ring min-h-[70px] w-full resize-none rounded-[var(--radius-md)] border border-transparent bg-transparent px-2 py-2 text-lg text-white outline-none placeholder-gray-500 disabled:bg-transparent disabled:text-gray-400 disabled:opacity-100"
             placeholder={auth.status === 'authenticated' ? 'Опишите задачу для Lite Agent' : 'Войдите через Google, чтобы начать работу'}
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
@@ -189,16 +191,19 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
         </div>
 
         {attachedImages.length > 0 ? (
-          <div className="px-5 pb-2 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 px-5 pb-2">
             {attachedImages.map((file) => (
-              <span key={file.name} className="text-xs px-2 py-1 rounded-md bg-[#1f1f1f] border border-[#3e3e3e] text-gray-200">
+              <span
+                key={file.name}
+                className="rounded-[var(--radius-sm)] border border-white/12 bg-[rgba(255,255,255,0.06)] px-2 py-1 text-xs text-gray-200"
+              >
                 {file.name}
               </span>
             ))}
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-between px-3 pb-3 gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3">
           <div className="flex items-center gap-2">
             <input
               ref={inputFileRef}
@@ -208,180 +213,187 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
               className="hidden"
               onChange={handleAttachImages}
             />
-            <button
+
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => inputFileRef.current?.click()}
               disabled={auth.status !== 'authenticated'}
-              className="p-2 text-gray-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-transparent border-none appearance-none"
               aria-label="Добавить изображения"
             >
               +
-            </button>
+            </Button>
           </div>
 
           <div className="flex items-center gap-2">
             {auth.status === 'authenticated' ? (
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="icon"
                 onClick={handleSubmit}
                 disabled={!prompt.trim()}
-                className={`p-2 rounded-full transition-all duration-200 border-none appearance-none ${prompt.trim() ? 'bg-white text-black hover:bg-gray-200 shadow-lg' : 'bg-[#333] text-gray-500 cursor-not-allowed'}`}
                 aria-label="Send prompt"
               >
-                <ArrowUp size={20} />
-              </button>
+                <ArrowUp size={18} />
+              </Button>
             ) : (
-              <button
-                type="button"
-                onClick={() => void handleGoogleAuth()}
-                disabled={isAuthLoading}
-                className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-60 border-none appearance-none"
-              >
+              <Button type="button" variant="primary" size="md" onClick={() => void handleGoogleAuth()} disabled={isAuthLoading}>
                 {isAuthLoading ? 'Вход...' : 'Войти через Google'}
-              </button>
+              </Button>
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
-      <div className="flex items-center gap-5 border-b border-[#3e3e3e] mb-6 px-1 overflow-x-auto">
-        <button
+      <div className="mb-6 flex items-center gap-2 overflow-x-auto border-b border-white/12 px-1 pb-1">
+        <Button
           type="button"
+          variant={activeTab === 'tasks' ? 'secondary' : 'ghost'}
+          size="sm"
           onClick={() => setActiveTab('tasks')}
-          className={`pb-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap bg-transparent border-none appearance-none ${activeTab === 'tasks' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-gray-200'}`}
+          className="rounded-b-none"
         >
           Задачи
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant={activeTab === 'review' ? 'secondary' : 'ghost'}
+          size="sm"
           onClick={() => setActiveTab('review')}
-          className={`pb-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap bg-transparent border-none appearance-none ${activeTab === 'review' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-gray-200'}`}
+          className="rounded-b-none"
         >
           Проверка кода
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant={activeTab === 'archive' ? 'secondary' : 'ghost'}
+          size="sm"
           onClick={() => setActiveTab('archive')}
-          className={`pb-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap bg-transparent border-none appearance-none ${activeTab === 'archive' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-gray-200'}`}
+          className="rounded-b-none"
         >
           Архивировать
-        </button>
+        </Button>
       </div>
 
       {activeTab === 'tasks' ? (
         <section className="space-y-4">
-          <div className="flex items-center gap-2 bg-[#1f1f1f] border border-[#3e3e3e] rounded-lg px-3 py-2">
+          <Card elevation={1} className="flex items-center gap-2 rounded-[var(--radius-md)] px-3 py-2">
             <Search size={16} className="text-gray-500" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Поиск по истории чатов"
-              className="w-full bg-transparent text-sm text-white outline-none placeholder-gray-500 appearance-none"
+              className="ui-focus-ring w-full rounded-[var(--radius-sm)] bg-transparent px-1 py-1 text-sm text-white outline-none placeholder-gray-500"
             />
-          </div>
+          </Card>
 
           {auth.status !== 'authenticated' ? (
-            <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-5 text-sm text-gray-300">
+            <Card elevation={1} className="p-5 text-sm text-gray-300">
               История задач доступна после входа через Google.
-            </div>
+            </Card>
           ) : null}
 
           {auth.status === 'authenticated' && isLoadingSessions ? (
-            <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-5 text-sm text-gray-300">Загружаем историю чатов...</div>
-          ) : null}
-
-          {auth.status === 'authenticated' && !isLoadingSessions && taskSessions.length === 0 ? (
-            <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-5 text-sm text-gray-300">
-              Здесь хранится короткая история активных чатов с ИИ.
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Card key={`skeleton-${index}`} elevation={1} className="space-y-3 p-4">
+                  <div className="skeleton skeleton-line skeleton-line--lg w-1/2" />
+                  <div className="skeleton skeleton-line w-4/5" />
+                  <div className="skeleton skeleton-line w-2/5" />
+                </Card>
+              ))}
             </div>
           ) : null}
 
+          {auth.status === 'authenticated' && !isLoadingSessions && taskSessions.length === 0 ? (
+            <Card elevation={1} className="p-5 text-sm text-gray-300">
+              Здесь хранится короткая история активных чатов с ИИ.
+            </Card>
+          ) : null}
+
           {taskSessions.map((session) => (
-            <article key={session.id} className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Card key={session.id} interactive elevation={2} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <h3 className="text-sm font-medium text-white truncate">{session.title?.trim() || 'Новый чат'}</h3>
+                <h3 className="truncate text-sm font-medium text-white">{session.title?.trim() || 'Новый чат'}</h3>
                 <p className="text-xs text-gray-400">
                   Сообщений: {session.messageCount} · Обновлено: {formatDate(session.lastMessageAt)}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onOpenChatSession(session.id)}
-                  className="self-start sm:self-auto inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
-                >
+                <Button type="button" variant="secondary" size="sm" onClick={() => onOpenChatSession(session.id)}>
                   Открыть чат
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleArchive(session.id, true)}
-                  className="self-start sm:self-auto inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
-                >
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => toggleArchive(session.id, true)}>
                   <Archive size={14} />
                   Перенести в архив
-                </button>
+                </Button>
               </div>
-            </article>
+            </Card>
           ))}
         </section>
       ) : null}
 
       {activeTab === 'review' ? (
         <section className="space-y-4">
-          <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-5">
-            <h2 className="text-lg font-semibold text-white mb-2">Включить проверку кода</h2>
-            <p className="text-sm text-gray-300 mb-4">Выявляйте критические ошибки до их выпуска.</p>
+          <Card elevation={2} className="p-5">
+            <h2 className="mb-2 text-lg font-semibold text-white">Включить проверку кода</h2>
+            <p className="mb-4 text-sm text-gray-300">Выявляйте критические ошибки до их выпуска.</p>
 
-            <div className="flex flex-wrap gap-2 mb-4">
-              <button
+            <div className="mb-4 flex flex-wrap gap-2">
+              <Button
                 type="button"
+                variant={reviewScope === 'me' ? 'primary' : 'secondary'}
+                size="md"
                 onClick={() => {
                   setReviewEnabled(true);
                   setReviewScope('me');
                 }}
-                className={`px-4 py-2 rounded-md text-sm transition-colors appearance-none ${reviewScope === 'me' ? 'bg-[#10a37f] text-white' : 'bg-[#1f1f1f] border border-[#3e3e3e] text-gray-200 hover:bg-[#2a2a2a]'}`}
               >
                 Включить для меня
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant={reviewScope === 'workspace' ? 'primary' : 'secondary'}
+                size="md"
                 onClick={() => {
                   setReviewEnabled(true);
                   setReviewScope('workspace');
                 }}
-                className={`px-4 py-2 rounded-md text-sm transition-colors appearance-none ${reviewScope === 'workspace' ? 'bg-[#10a37f] text-white' : 'bg-[#1f1f1f] border border-[#3e3e3e] text-gray-200 hover:bg-[#2a2a2a]'}`}
               >
                 Включить для моей рабочей области
-              </button>
+              </Button>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 setReviewEnabled(false);
                 setReviewScope('none');
               }}
-              className="text-xs text-gray-400 hover:text-white bg-transparent border-none appearance-none"
             >
               Отключить проверку
-            </button>
-          </div>
+            </Button>
+          </Card>
 
           {reviewEnabled ? (
-            <div className="bg-[#1f322b] border border-[#2e6b5b] rounded-xl p-4 flex items-start gap-3">
-              <CheckCircle2 size={18} className="text-[#24c48f] mt-0.5" />
+            <Card elevation={2} className="flex items-start gap-3 border-[#2e6b5b] bg-[#1f322b]/85 p-4">
+              <CheckCircle2 size={18} className="mt-0.5 text-[#24c48f]" />
               <div>
                 <h3 className="text-sm font-medium text-white">Дополнительная проверка включена</h3>
-                <p className="text-xs text-gray-300 mt-1">
+                <p className="mt-1 text-xs text-gray-300">
                   Для каждого изменения агент запускает двойной проход анализа (2 проверки подряд) и поднимает найденные ошибки до публикации.
                 </p>
               </div>
-            </div>
+            </Card>
           ) : (
-            <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-4 flex items-start gap-3">
-              <ShieldAlert size={18} className="text-amber-300 mt-0.5" />
+            <Card elevation={1} className="flex items-start gap-3 p-4">
+              <ShieldAlert size={18} className="mt-0.5 text-amber-300" />
               <p className="text-xs text-gray-300">Проверка кода отключена. Рекомендуем включить хотя бы персональный режим.</p>
-            </div>
+            </Card>
           )}
         </section>
       ) : null}
@@ -389,42 +401,34 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
       {activeTab === 'archive' ? (
         <section className="space-y-4">
           {auth.status !== 'authenticated' ? (
-            <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-5 text-sm text-gray-300">
+            <Card elevation={1} className="p-5 text-sm text-gray-300">
               Архив завершенных чатов доступен после авторизации.
-            </div>
+            </Card>
           ) : null}
 
           {auth.status === 'authenticated' && archivedSessions.length === 0 ? (
-            <div className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-5 text-sm text-gray-300">
+            <Card elevation={1} className="p-5 text-sm text-gray-300">
               Здесь будут завершенные чаты, где агент полностью завершил работу.
-            </div>
+            </Card>
           ) : null}
 
           {archivedSessions.map((session) => (
-            <article key={session.id} className="bg-[#252525] border border-[#3e3e3e] rounded-xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Card key={session.id} interactive elevation={2} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <h3 className="text-sm font-medium text-white truncate">{session.title?.trim() || 'Завершенный чат'}</h3>
+                <h3 className="truncate text-sm font-medium text-white">{session.title?.trim() || 'Завершенный чат'}</h3>
                 <p className="text-xs text-gray-400">
                   Сообщений: {session.messageCount} · Завершен: {formatDate(session.lastMessageAt)}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onOpenChatSession(session.id)}
-                  className="self-start sm:self-auto text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
-                >
+                <Button type="button" variant="secondary" size="sm" onClick={() => onOpenChatSession(session.id)}>
                   Открыть чат
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleArchive(session.id, false)}
-                  className="self-start sm:self-auto text-xs px-3 py-1.5 rounded-md border border-[#3e3e3e] hover:bg-[#2f2f2f] transition-colors appearance-none"
-                >
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => toggleArchive(session.id, false)}>
                   Вернуть в задачи
-                </button>
+                </Button>
               </div>
-            </article>
+            </Card>
           ))}
         </section>
       ) : null}

@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Menu, Settings, Shield, Terminal, X } from 'lucide-react';
 import { useStore } from '@nanostores/react';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { motionVariants } from '~/lib/motion/config';
 import { authStore } from '~/lib/stores/auth';
 import { signInWithGoogle } from '~/lib/supabase/auth.client';
+import { Button } from '~/components/ui/Button';
 import type { ViewState } from './types';
 
 interface NavbarProps {
@@ -13,6 +16,7 @@ interface NavbarProps {
 
 export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps) {
   const auth = useStore(authStore);
+  const reduceMotion = useReducedMotion();
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -44,118 +48,130 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
 
   return (
     <>
-      <nav className="flex items-center justify-between px-4 h-14 bg-[#191919] border-b border-[#252525] relative z-40">
-        <div className="flex items-center gap-4 min-w-0">
-          <button
+      <nav className="mx-2 mt-2 flex h-14 items-center justify-between rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] px-4 elevation-2">
+        <div className="min-w-0 flex items-center gap-3">
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => setIsMobileMenuOpen((value) => !value)}
-            className="p-2 text-gray-400 hover:text-white md:hidden bg-transparent border-none appearance-none"
+            className="md:hidden"
             aria-label="Open menu"
           >
-            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+            {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          </Button>
 
           <button
             type="button"
             onClick={() => handleNavigate('dashboard')}
-            className="flex items-center gap-2 cursor-pointer group bg-transparent border-none p-0 text-white min-w-0 appearance-none"
+            className="ui-focus-ring ui-interactive flex min-w-0 items-center gap-2 rounded-[var(--radius-md)] bg-transparent p-1 text-white"
           >
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[var(--shadow-sm)]">
               <Terminal size={18} className="text-white" />
-            </div>
-            <span className="font-semibold text-lg tracking-tight truncate">LiteCode</span>
+            </span>
+            <span className="truncate text-lg font-semibold tracking-tight">LiteCode</span>
           </button>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
           {currentView === 'chat' ? (
-            <div className="hidden md:flex items-center px-3 py-1.5 bg-[#252525] rounded-full text-xs text-gray-300 gap-2 border border-[#333]">
+            <div className="hidden items-center gap-2 rounded-full border border-white/14 bg-[rgba(255,255,255,0.06)] px-3 py-1.5 text-xs text-gray-300 md:flex elevation-1">
               <Shield size={12} />
               <span>Private Beta - Lite Agent</span>
             </div>
           ) : null}
 
           {auth.status === 'authenticated' ? (
-            <div className="hidden sm:block text-xs text-gray-300 max-w-[220px] truncate">
-              {auth.email || 'Авторизованный пользователь'}
-            </div>
+            <div className="hidden max-w-[220px] truncate text-xs text-gray-300 sm:block">{auth.email || 'Авторизованный пользователь'}</div>
           ) : (
-            <button
-              type="button"
-              onClick={() => void handleGoogleAuth()}
-              disabled={isAuthLoading}
-              className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 bg-white text-black rounded-md hover:bg-gray-200 transition-colors disabled:opacity-60 appearance-none border-none"
-            >
+            <Button type="button" variant="primary" size="sm" onClick={() => void handleGoogleAuth()} disabled={isAuthLoading}>
               {isAuthLoading ? 'Вход...' : 'Войти через Google'}
-            </button>
+            </Button>
           )}
 
-          <button
-            type="button"
-            onClick={handleOpenSettings}
-            className="hidden sm:inline-flex px-3 py-1.5 text-xs rounded-md border border-[#3e3e3e] text-gray-200 hover:bg-[#252525] transition-colors bg-transparent appearance-none"
-          >
+          <Button type="button" variant="secondary" size="sm" onClick={handleOpenSettings} className="hidden sm:inline-flex">
             Настройки
-          </button>
+          </Button>
 
-          <button
-            type="button"
-            onClick={handleOpenSettings}
-            className="p-2 text-gray-300 hover:text-white rounded-md hover:bg-[#252525] transition-colors bg-transparent border-none appearance-none"
-            aria-label="Open settings"
-          >
+          <Button type="button" variant="ghost" size="icon" onClick={handleOpenSettings} aria-label="Open settings">
             <Settings size={18} />
-          </button>
+          </Button>
         </div>
       </nav>
 
-      {isMobileMenuOpen ? (
-        <>
-          <button
-            type="button"
-            aria-label="Close mobile menu"
-            className="fixed inset-0 bg-black/50 z-40 md:hidden border-none"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
+      <AnimatePresence>
+        {isMobileMenuOpen ? (
+          <m.div
+            key="mobile-menu"
+            variants={reduceMotion ? motionVariants.modalReduced : motionVariants.modalBackdrop}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="fixed inset-0 z-40 md:hidden"
+          >
+            <button
+              type="button"
+              aria-label="Close mobile menu"
+              className="overlay-backdrop absolute inset-0 border-none"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
 
-          <aside className="fixed top-14 left-0 z-50 w-[260px] bg-[#1f1f1f] border-r border-[#333] shadow-2xl p-4 space-y-3 md:hidden">
-            <button
-              type="button"
-              onClick={() => handleNavigate('dashboard')}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${currentView === 'dashboard' ? 'bg-[#2f2f2f] text-white' : 'text-gray-200 hover:bg-[#2a2a2a]'}`}
+            <m.aside
+              variants={reduceMotion ? motionVariants.modalReduced : motionVariants.modalPanel}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="surface-card elevation-4 absolute left-3 top-16 z-50 w-[272px] space-y-2 rounded-[var(--radius-lg)] p-3"
             >
-              Дашборд
-            </button>
-            <button
-              type="button"
-              onClick={() => handleNavigate('chat')}
-              disabled={auth.status !== 'authenticated'}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${currentView === 'chat' ? 'bg-[#2f2f2f] text-white' : 'text-gray-200 hover:bg-[#2a2a2a]'} disabled:opacity-40`}
-            >
-              Чат
-            </button>
-            <button
-              type="button"
-              onClick={handleOpenSettings}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${currentView === 'settings' ? 'bg-[#2f2f2f] text-white' : 'text-gray-200 hover:bg-[#2a2a2a]'}`}
-            >
-              Настройки
-            </button>
-            {auth.status === 'authenticated' ? (
-              <p className="pt-2 text-xs text-gray-400 border-t border-[#333] break-all">{auth.email || 'Авторизованный пользователь'}</p>
-            ) : (
-              <button
+              <Button
                 type="button"
-                onClick={() => void handleGoogleAuth()}
-                disabled={isAuthLoading}
-                className="w-full px-3 py-2 text-sm bg-white text-black rounded-md hover:bg-gray-200 transition-colors disabled:opacity-60 border-none appearance-none"
+                variant={currentView === 'dashboard' ? 'secondary' : 'ghost'}
+                size="md"
+                onClick={() => handleNavigate('dashboard')}
+                className="w-full justify-start"
               >
-                {isAuthLoading ? 'Вход...' : 'Войти через Google'}
-              </button>
-            )}
-          </aside>
-        </>
-      ) : null}
+                Дашборд
+              </Button>
+              <Button
+                type="button"
+                variant={currentView === 'chat' ? 'secondary' : 'ghost'}
+                size="md"
+                onClick={() => handleNavigate('chat')}
+                disabled={auth.status !== 'authenticated'}
+                className="w-full justify-start"
+              >
+                Чат
+              </Button>
+              <Button
+                type="button"
+                variant={currentView === 'settings' ? 'secondary' : 'ghost'}
+                size="md"
+                onClick={handleOpenSettings}
+                className="w-full justify-start"
+              >
+                Настройки
+              </Button>
+
+              {auth.status === 'authenticated' ? (
+                <p className="mt-2 break-all border-t border-white/10 pt-3 text-xs text-gray-400">
+                  {auth.email || 'Авторизованный пользователь'}
+                </p>
+              ) : (
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="md"
+                  onClick={() => void handleGoogleAuth()}
+                  disabled={isAuthLoading}
+                  className="mt-1 w-full"
+                >
+                  {isAuthLoading ? 'Вход...' : 'Войти через Google'}
+                </Button>
+              )}
+            </m.aside>
+          </m.div>
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }

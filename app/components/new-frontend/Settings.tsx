@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { BarChart2, Database, FileText, GitPullRequest, Shield, X } from 'lucide-react';
 import { useStore } from '@nanostores/react';
+import { m, useReducedMotion } from 'framer-motion';
+import { Button } from '~/components/ui/Button';
+import { Card } from '~/components/ui/Card';
+import { motionVariants } from '~/lib/motion/config';
 import { authStore } from '~/lib/stores/auth';
 import { Toggle } from './Toggle';
 import type { SettingsTab } from './types';
@@ -86,6 +90,7 @@ function centsToCurrency(value: number, currency: string) {
 
 export function Settings({ onClose }: SettingsProps) {
   const auth = useStore(authStore);
+  const reduceMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [settings, setSettings] = useState<AgentSettingsPayload>(DEFAULT_SETTINGS);
   const [savedAt, setSavedAt] = useState<string>('');
@@ -159,27 +164,27 @@ export function Settings({ onClose }: SettingsProps) {
           <div className="max-w-3xl space-y-6">
             <h2 className="text-2xl font-semibold">Общее</h2>
 
-            <div className="bg-[#202123] border border-[#3e3e3e] rounded-xl p-4 space-y-4">
+            <Card elevation={2} className="space-y-4 p-4">
               <div>
-                <label className="block text-sm font-medium mb-2 text-white">Системный промпт агента</label>
+                <label className="mb-2 block text-sm font-medium text-white">Системный промпт агента</label>
                 <textarea
                   value={settings.systemPrompt}
                   onChange={(event) => setSettings((prev) => ({ ...prev, systemPrompt: event.target.value }))}
-                  className="w-full min-h-[140px] bg-[#252525] border border-[#3e3e3e] rounded-lg p-3 text-sm text-gray-200 outline-none appearance-none"
+                  className="ui-focus-ring min-h-[140px] w-full rounded-[var(--radius-md)] border border-white/10 bg-[rgba(0,0,0,0.18)] p-3 text-sm text-gray-200 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 text-white">Формат ветки</label>
+                <label className="mb-2 block text-sm font-medium text-white">Формат ветки</label>
                 <input
                   value={settings.branchFormat}
                   onChange={(event) => setSettings((prev) => ({ ...prev, branchFormat: event.target.value }))}
-                  className="w-full bg-[#252525] border border-[#3e3e3e] rounded-lg px-3 py-2 text-sm text-gray-200 outline-none appearance-none"
+                  className="ui-focus-ring w-full rounded-[var(--radius-md)] border border-white/10 bg-[rgba(0,0,0,0.18)] px-3 py-2 text-sm text-gray-200 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 text-white">Режим ответов</label>
+                <label className="mb-2 block text-sm font-medium text-white">Режим ответов</label>
                 <select
                   value={settings.responseMode}
                   onChange={(event) =>
@@ -188,7 +193,7 @@ export function Settings({ onClose }: SettingsProps) {
                       responseMode: event.target.value as AgentSettingsPayload['responseMode'],
                     }))
                   }
-                  className="w-full bg-[#252525] border border-[#3e3e3e] rounded-lg px-3 py-2 text-sm text-gray-200 outline-none appearance-none"
+                  className="ui-focus-ring w-full rounded-[var(--radius-md)] border border-white/10 bg-[rgba(0,0,0,0.18)] px-3 py-2 text-sm text-gray-200 outline-none"
                 >
                   <option value="strict">Strict</option>
                   <option value="balanced">Balanced</option>
@@ -197,20 +202,16 @@ export function Settings({ onClose }: SettingsProps) {
               </div>
 
               <div className="text-xs text-gray-400">
-                Имя активного агента: <span className="text-white font-medium">Lite Agent</span>
+                Имя активного агента: <span className="font-medium text-white">Lite Agent</span>
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={saveSettings}
-                  className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors border-none appearance-none"
-                >
+                <Button type="button" variant="primary" size="md" onClick={saveSettings}>
                   Сохранить настройки
-                </button>
+                </Button>
                 {savedAt ? <span className="text-xs text-gray-400">Сохранено в {savedAt}</span> : null}
               </div>
-            </div>
+            </Card>
           </div>
         );
       }
@@ -219,11 +220,11 @@ export function Settings({ onClose }: SettingsProps) {
         return (
           <div className="max-w-3xl space-y-4">
             <h2 className="text-2xl font-semibold">Окружения</h2>
-            <div className="bg-[#202123] border border-[#3e3e3e] rounded-xl p-4 text-sm text-gray-300 space-y-2">
+            <Card elevation={2} className="space-y-2 p-4 text-sm text-gray-300">
               <p>Текущая рабочая область: LiteCode.</p>
               <p>Ветка по умолчанию: {settings.branchFormat}</p>
               <p>Статус авторизации: {auth.status === 'authenticated' ? 'Авторизован' : 'Гость'}</p>
-            </div>
+            </Card>
           </div>
         );
       }
@@ -232,7 +233,7 @@ export function Settings({ onClose }: SettingsProps) {
         return (
           <div className="max-w-3xl space-y-4">
             <h2 className="text-2xl font-semibold">Обзор кода</h2>
-            <div className="bg-[#202123] border border-[#3e3e3e] rounded-xl p-4 space-y-4">
+            <Card elevation={2} className="space-y-4 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-medium text-white">Двойной проход AI-проверки</h3>
@@ -252,27 +253,24 @@ export function Settings({ onClose }: SettingsProps) {
                     { id: 'me', label: 'Для меня' },
                     { id: 'workspace', label: 'Для рабочей области' },
                   ].map((option) => (
-                    <button
+                    <Button
                       key={option.id}
                       type="button"
+                      size="sm"
+                      variant={settings.reviewScope === option.id ? 'primary' : 'secondary'}
                       onClick={() =>
                         setSettings((prev) => ({
                           ...prev,
                           reviewScope: option.id as AgentSettingsPayload['reviewScope'],
                         }))
                       }
-                      className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                        settings.reviewScope === option.id
-                          ? 'bg-[#10a37f] text-white border-none appearance-none'
-                          : 'bg-[#252525] border border-[#3e3e3e] text-gray-300 hover:bg-[#2f2f2f] appearance-none'
-                      }`}
                     >
                       {option.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
         );
       }
@@ -282,32 +280,28 @@ export function Settings({ onClose }: SettingsProps) {
           <div className="max-w-3xl space-y-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-2xl font-semibold">Использование</h2>
-              <button
-                type="button"
-                onClick={() => void loadUsageData()}
-                className="px-3 py-1.5 text-xs rounded-md border border-[#3e3e3e] bg-[#252525] hover:bg-[#2f2f2f] appearance-none"
-              >
+              <Button type="button" variant="secondary" size="sm" onClick={() => void loadUsageData()}>
                 {isLoadingUsage ? 'Обновление...' : 'Обновить'}
-              </button>
+              </Button>
             </div>
 
-            <div className="bg-[#202123] border border-[#3e3e3e] rounded-xl p-4 space-y-4">
+            <Card elevation={2} className="space-y-4 p-4">
               <div>
-                <div className="text-sm text-gray-300 mb-1">Дневной лимит чата</div>
-                <div className="w-full h-2 rounded-full bg-[#3e3e3e]">
-                  <div className="h-2 rounded-full bg-[#10a37f]" style={{ width: `${usage.chatPercent}%` }} />
+                <div className="mb-1 text-sm text-gray-300">Дневной лимит чата</div>
+                <div className="h-2 w-full rounded-full bg-white/10">
+                  <div className="h-2 rounded-full bg-[#10a37f] transition-[width] duration-300" style={{ width: `${usage.chatPercent}%` }} />
                 </div>
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="mt-1 text-xs text-gray-400">
                   {limitsData ? `${limitsData.limits.chat.remaining}/${limitsData.limits.chat.dailyLimit}` : 'Данные не загружены'}
                 </div>
               </div>
 
               <div>
-                <div className="text-sm text-gray-300 mb-1">Дневной лимит enhancer</div>
-                <div className="w-full h-2 rounded-full bg-[#3e3e3e]">
-                  <div className="h-2 rounded-full bg-[#10a37f]" style={{ width: `${usage.enhancerPercent}%` }} />
+                <div className="mb-1 text-sm text-gray-300">Дневной лимит enhancer</div>
+                <div className="h-2 w-full rounded-full bg-white/10">
+                  <div className="h-2 rounded-full bg-[#10a37f] transition-[width] duration-300" style={{ width: `${usage.enhancerPercent}%` }} />
                 </div>
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="mt-1 text-xs text-gray-400">
                   {limitsData
                     ? `${limitsData.limits.enhancer.remaining}/${limitsData.limits.enhancer.dailyLimit}`
                     : 'Данные не загружены'}
@@ -315,17 +309,17 @@ export function Settings({ onClose }: SettingsProps) {
               </div>
 
               <div>
-                <div className="text-sm text-gray-300 mb-1">Финансовый лимит месяца</div>
-                <div className="w-full h-2 rounded-full bg-[#3e3e3e]">
-                  <div className="h-2 rounded-full bg-[#10a37f]" style={{ width: `${usage.balancePercent}%` }} />
+                <div className="mb-1 text-sm text-gray-300">Финансовый лимит месяца</div>
+                <div className="h-2 w-full rounded-full bg-white/10">
+                  <div className="h-2 rounded-full bg-[#10a37f] transition-[width] duration-300" style={{ width: `${usage.balancePercent}%` }} />
                 </div>
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="mt-1 text-xs text-gray-400">
                   {billingData
                     ? `${centsToCurrency(billingData.billing.balanceCents, billingData.billing.currency)} доступно`
                     : 'Данные не загружены'}
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
         );
       }
@@ -334,11 +328,11 @@ export function Settings({ onClose }: SettingsProps) {
         return (
           <div className="max-w-3xl space-y-4">
             <h2 className="text-2xl font-semibold">Аналитика</h2>
-            <div className="bg-[#202123] border border-[#3e3e3e] rounded-xl p-4 text-sm text-gray-300 space-y-2">
+            <Card elevation={2} className="space-y-2 p-4 text-sm text-gray-300">
               <p>План: {auth.plan || 'free'}</p>
               <p>Сессия пользователя: {auth.status === 'authenticated' ? auth.userId : 'anonymous'}</p>
               <p>Режим ответов агента: {settings.responseMode}</p>
-            </div>
+            </Card>
           </div>
         );
       }
@@ -347,7 +341,7 @@ export function Settings({ onClose }: SettingsProps) {
         return (
           <div className="max-w-3xl space-y-4">
             <h2 className="text-2xl font-semibold">Элементы управления данными</h2>
-            <div className="bg-[#202123] border border-[#3e3e3e] rounded-xl p-4 space-y-3">
+            <Card elevation={2} className="space-y-3 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-medium text-white">Разрешить телеметрию UI</h3>
@@ -361,7 +355,7 @@ export function Settings({ onClose }: SettingsProps) {
               <p className="text-xs text-gray-400">
                 Настройки телеметрии и приватности сохраняются локально и применяются только в этом браузере.
               </p>
-            </div>
+            </Card>
           </div>
         );
       }
@@ -370,15 +364,15 @@ export function Settings({ onClose }: SettingsProps) {
         return (
           <div className="max-w-3xl space-y-4">
             <h2 className="text-2xl font-semibold">Документы</h2>
-            <div className="bg-[#202123] border border-[#3e3e3e] rounded-xl p-4 space-y-3">
+            <Card elevation={2} className="space-y-3 p-4">
               <label className="block text-sm font-medium text-white">Промпт работы с документацией</label>
               <textarea
                 value={settings.documentsPrompt}
                 onChange={(event) => setSettings((prev) => ({ ...prev, documentsPrompt: event.target.value }))}
-                className="w-full min-h-[120px] bg-[#252525] border border-[#3e3e3e] rounded-lg p-3 text-sm text-gray-200 outline-none appearance-none"
+                className="ui-focus-ring min-h-[120px] w-full rounded-[var(--radius-md)] border border-white/10 bg-[rgba(0,0,0,0.18)] p-3 text-sm text-gray-200 outline-none"
               />
               <p className="text-xs text-gray-400">Этот текст добавляется как контекст, когда агент анализирует документы и спецификации.</p>
-            </div>
+            </Card>
           </div>
         );
       }
@@ -388,56 +382,72 @@ export function Settings({ onClose }: SettingsProps) {
     }
   };
 
+  const backdropVariants = reduceMotion ? motionVariants.modalReduced : motionVariants.modalBackdrop;
+  const panelVariants = reduceMotion ? motionVariants.modalReduced : motionVariants.modalPanel;
+
   return (
-    <div className="fixed inset-0 z-50 bg-[#191919] text-white">
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute top-3 right-3 p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors z-50 bg-transparent border-none appearance-none"
-        aria-label="Close settings"
+    <m.div
+      variants={backdropVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="overlay-backdrop fixed inset-0 z-[70] flex items-center justify-center px-3 py-4 md:px-8 md:py-8"
+    >
+      <button type="button" onClick={onClose} aria-label="Close settings" className="absolute inset-0 border-none bg-transparent" />
+
+      <m.section
+        variants={panelVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        className="surface-card elevation-5 relative z-10 flex h-full max-h-[92vh] w-full max-w-[1220px] flex-col text-white"
       >
-        <X size={22} />
-      </button>
-
-      <div className="h-full flex flex-col md:flex-row">
-        <aside className="hidden md:flex md:w-64 border-r border-[#3e3e3e] flex-col pt-16 pb-4 px-3">
-          <h1 className="text-xl font-semibold px-3 mb-4">Настройки</h1>
-          <div className="space-y-1 overflow-y-auto">
-            {SIDEBAR_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 bg-transparent border-none appearance-none ${
-                  activeTab === item.id ? 'bg-[#252525] text-white' : 'text-gray-400 hover:bg-[#252525] hover:text-white'
-                }`}
-              >
-                {item.icon}
-                <span className="truncate">{item.label}</span>
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        <div className="md:hidden pt-12 px-3 border-b border-[#3e3e3e]">
-          <div className="flex gap-2 overflow-x-auto pb-3">
-            {SIDEBAR_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setActiveTab(item.id)}
-                className={`px-3 py-1.5 rounded-md text-xs whitespace-nowrap appearance-none ${
-                  activeTab === item.id ? 'bg-[#252525] text-white border border-[#3e3e3e]' : 'text-gray-300 bg-[#1f1f1f]'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+        <div className="absolute right-3 top-3 z-20">
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close settings">
+            <X size={20} />
+          </Button>
         </div>
 
-        <section className="flex-1 overflow-y-auto pt-4 md:pt-16 px-4 md:px-10 pb-8">{renderContent()}</section>
-      </div>
-    </div>
+        <div className="flex h-full flex-col md:flex-row">
+          <aside className="hidden border-r border-white/10 px-3 pb-4 pt-16 md:flex md:w-72 md:flex-col">
+            <h1 className="mb-4 px-3 text-xl font-semibold">Настройки</h1>
+            <div className="space-y-1 overflow-y-auto pr-1">
+              {SIDEBAR_ITEMS.map((item) => (
+                <Button
+                  key={item.id}
+                  type="button"
+                  variant={activeTab === item.id ? 'secondary' : 'ghost'}
+                  size="md"
+                  onClick={() => setActiveTab(item.id)}
+                  className="w-full justify-start"
+                >
+                  {item.icon}
+                  <span className="truncate">{item.label}</span>
+                </Button>
+              ))}
+            </div>
+          </aside>
+
+          <div className="border-b border-white/10 px-3 pt-12 md:hidden">
+            <div className="flex gap-2 overflow-x-auto pb-3">
+              {SIDEBAR_ITEMS.map((item) => (
+                <Button
+                  key={item.id}
+                  type="button"
+                  variant={activeTab === item.id ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveTab(item.id)}
+                  className="whitespace-nowrap"
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <section className="flex-1 overflow-y-auto px-4 pb-8 pt-4 md:px-10 md:pt-16">{renderContent()}</section>
+        </div>
+      </m.section>
+    </m.div>
   );
 }

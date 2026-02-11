@@ -23,6 +23,7 @@
     "node": ">=20.10.0"
   },
   "dependencies": {
+    "archiver": "^7.0.1",
     "@ai-sdk/google": "^1.2.22",
     "@ai-sdk/openai": "^1.0.0",
     "@codemirror/autocomplete": "^6.17.0",

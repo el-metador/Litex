@@ -26,7 +26,7 @@ export function Toast({ message, isVisible, onClose }: ToastProps) {
           <button
             type="button"
             onClick={onClose}
-            className="ui-focus-ring pointer-events-auto flex w-full items-center gap-3 rounded-[var(--radius-md)] border border-[#34c89f]/28 bg-[#10a37f] px-4 py-3 text-white elevation-4"
+            className="ui-focus-ring pointer-events-auto flex w-full items-center gap-3 rounded-[var(--radius-md)] border border-sky-300/30 bg-sky-500/24 px-4 py-3 text-white elevation-4 backdrop-blur-xl"
           >
             <CheckCircle2 size={20} />
             <span className="text-left text-sm font-medium">{message}</span>

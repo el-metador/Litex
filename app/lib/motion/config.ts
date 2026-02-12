@@ -5,9 +5,9 @@ const easeInOut: [number, number, number, number] = [0.4, 0, 0.2, 1];
 const easeIn: [number, number, number, number] = [0.4, 0, 1, 1];
 
 export const motionDurations = {
-  fast: 0.16,
-  base: 0.24,
-  slow: 0.4,
+  fast: 0.14,
+  base: 0.22,
+  slow: 0.38,
 } as const;
 
 export const motionEasing = {
@@ -19,14 +19,14 @@ export const motionEasing = {
 export const motionSprings = {
   gentle: {
     type: 'spring',
-    stiffness: 260,
-    damping: 24,
-    mass: 0.85,
+    stiffness: 320,
+    damping: 28,
+    mass: 0.82,
   } as Transition,
   modal: {
     type: 'spring',
-    stiffness: 320,
-    damping: 28,
+    stiffness: 360,
+    damping: 30,
     mass: 0.9,
   } as Transition,
 } as const;
@@ -35,8 +35,8 @@ export const motionVariants = {
   page: {
     initial: {
       opacity: 0,
-      y: 12,
-      scale: 0.98,
+      y: 14,
+      scale: 0.982,
     },
     animate: {
       opacity: 1,
@@ -49,8 +49,8 @@ export const motionVariants = {
     },
     exit: {
       opacity: 0,
-      y: -8,
-      scale: 0.985,
+      y: -10,
+      scale: 0.988,
       transition: {
         duration: motionDurations.fast,
         ease: motionEasing.easeIn,
@@ -84,15 +84,15 @@ export const motionVariants = {
       },
     },
     hover: {
-      y: -3,
-      scale: 1.015,
+      y: -4,
+      scale: 1.016,
       transition: {
         duration: motionDurations.fast,
         ease: motionEasing.easeOut,
       },
     },
     tap: {
-      scale: 0.995,
+      scale: 0.992,
       transition: {
         duration: 0.1,
         ease: motionEasing.easeInOut,
@@ -113,7 +113,7 @@ export const motionVariants = {
       },
     },
     hover: {
-      scale: 1.01,
+      scale: 1.015,
       transition: {
         duration: motionDurations.fast,
         ease: motionEasing.easeOut,
@@ -152,8 +152,8 @@ export const motionVariants = {
   modalPanel: {
     initial: {
       opacity: 0,
-      scale: 0.96,
-      y: 10,
+      scale: 0.965,
+      y: 12,
     },
     animate: {
       opacity: 1,
@@ -163,8 +163,8 @@ export const motionVariants = {
     },
     exit: {
       opacity: 0,
-      scale: 0.97,
-      y: 8,
+      scale: 0.972,
+      y: 10,
       transition: {
         duration: motionDurations.fast,
         ease: motionEasing.easeIn,

@@ -61,7 +61,7 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
 
   return (
     <>
-      <nav className="mx-auto mt-2 flex h-[3.35rem] w-[calc(100%-1rem)] max-w-[1280px] items-center justify-between rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] px-2.5 elevation-2 sm:h-14 sm:px-4">
+      <nav className="mx-auto mt-2.5 flex h-[3.6rem] w-[calc(100%-1rem)] max-w-[1320px] items-center justify-between gap-2 rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] px-2.5 elevation-3 sm:h-[3.9rem] sm:px-4">
         <div className="min-w-0 flex items-center gap-2 sm:gap-3">
           <Button
             type="button"
@@ -77,20 +77,40 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
           <button
             type="button"
             onClick={() => handleNavigate('dashboard')}
-            className="ui-focus-ring ui-interactive flex min-w-0 items-center gap-2 rounded-[var(--radius-md)] bg-transparent p-1 text-white"
+            className="ui-focus-ring ui-interactive flex min-w-0 items-center gap-2 rounded-[var(--radius-md)] px-1 py-1 text-left text-white"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[var(--shadow-sm)] sm:h-9 sm:w-9">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/16 bg-white/[0.08] shadow-[var(--shadow-sm)]">
               <Terminal size={17} className="text-white" />
             </span>
-            <span className="truncate text-sm font-semibold tracking-tight sm:text-lg">LiteCode</span>
+            <span className="min-w-0">
+              <span className="ui-kicker block truncate">AI Dev Workspace</span>
+              <span className="block truncate font-[var(--font-display)] text-[0.97rem] font-semibold leading-none tracking-[-0.015em] sm:text-[1.04rem]">
+                LiteCode
+              </span>
+            </span>
           </button>
         </div>
 
-        <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
+        <div className="hidden min-w-0 items-center gap-1.5 md:flex">
+          <Button type="button" variant={currentView === 'dashboard' ? 'secondary' : 'ghost'} size="sm" onClick={() => handleNavigate('dashboard')}>
+            Dashboard
+          </Button>
+          <Button
+            type="button"
+            variant={currentView === 'chat' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => handleNavigate('chat')}
+            disabled={auth.status !== 'authenticated'}
+          >
+            Agent Chat
+          </Button>
+        </div>
+
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2.5">
           {currentView === 'chat' ? (
-            <div className="hidden items-center gap-2 rounded-full border border-white/14 bg-[rgba(255,255,255,0.06)] px-3 py-1.5 text-xs text-gray-300 lg:flex elevation-1">
+            <div className="hidden items-center gap-1.5 rounded-full border border-white/14 bg-white/[0.06] px-2.5 py-1 text-[11px] text-gray-300 lg:flex">
               <Shield size={12} />
-              <span>Private Beta - Lite Agent</span>
+              <span>Private Preview</span>
             </div>
           ) : null}
 
@@ -105,7 +125,7 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
               disabled={isAuthLoading}
               className="hidden sm:inline-flex"
             >
-              {isAuthLoading ? 'Вход...' : 'Войти через Google'}
+              {isAuthLoading ? 'Вход...' : 'Sign in'}
             </Button>
           )}
 
@@ -148,9 +168,14 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
               initial="initial"
               animate="animate"
               exit="exit"
-              className="surface-card elevation-4 absolute bottom-3 left-3 right-3 top-[calc(env(safe-area-inset-top)+3.85rem)] z-50 overflow-y-auto space-y-2 rounded-[var(--radius-lg)] p-3"
+              className="surface-card elevation-4 absolute bottom-3 left-3 right-3 top-[calc(env(safe-area-inset-top)+4.05rem)] z-50 overflow-y-auto space-y-2 rounded-[var(--radius-lg)] p-3"
               style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
             >
+              <div className="mb-2">
+                <p className="ui-kicker mb-1">Navigation</p>
+                <p className="font-[var(--font-display)] text-base font-semibold tracking-tight text-white">LiteCode workspace</p>
+              </div>
+
               <Button
                 type="button"
                 variant={currentView === 'dashboard' ? 'secondary' : 'ghost'}

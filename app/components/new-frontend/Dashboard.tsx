@@ -166,17 +166,17 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-3 pb-20 pt-8 sm:px-4 md:pt-16">
-      <h1 className="mb-8 text-center text-2xl font-semibold leading-tight tracking-tight text-white sm:text-3xl md:mb-10 md:text-5xl">
+    <div className="mx-auto w-full max-w-5xl px-3 pb-20 pt-6 sm:px-4 sm:pt-8 lg:px-6 lg:pt-12">
+      <h1 className="mb-7 text-center text-[clamp(1.9rem,7.2vw,3.75rem)] font-semibold leading-[1.08] tracking-tight text-white sm:mb-10">
         Что теперь будем
         <br />
         программировать?
       </h1>
 
-      <Card elevation={3} className="mb-10 rounded-[calc(var(--radius-lg)+6px)]">
-        <div className="px-5 pb-2 pt-4">
+      <Card elevation={3} className="mb-8 rounded-[calc(var(--radius-lg)+6px)] sm:mb-10">
+        <div className="px-3 pb-2 pt-3 sm:px-5 sm:pt-4">
           <textarea
-            className="ui-focus-ring min-h-[70px] w-full resize-none rounded-[var(--radius-md)] border border-transparent bg-transparent px-2 py-2 text-[16px] text-white outline-none placeholder-gray-500 disabled:bg-transparent disabled:text-gray-400 disabled:opacity-100 sm:text-lg"
+            className="ui-focus-ring min-h-[84px] w-full resize-none rounded-[var(--radius-md)] border border-transparent bg-transparent px-2 py-2 text-[16px] leading-relaxed text-white outline-none placeholder-gray-500 disabled:bg-transparent disabled:text-gray-400 disabled:opacity-100 sm:text-lg"
             placeholder={auth.status === 'authenticated' ? 'Опишите задачу для Lite Agent' : 'Войдите через Google, чтобы начать работу'}
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
@@ -191,7 +191,7 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
         </div>
 
         {attachedImages.length > 0 ? (
-          <div className="flex flex-wrap gap-2 px-5 pb-2">
+          <div className="flex flex-wrap gap-2 px-3 pb-2 sm:px-5">
             {attachedImages.map((file) => (
               <span
                 key={file.name}
@@ -203,8 +203,8 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 px-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 self-start">
             <input
               ref={inputFileRef}
               type="file"
@@ -226,7 +226,7 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
             {auth.status === 'authenticated' ? (
               <Button
                 type="button"
@@ -239,7 +239,14 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
                 <ArrowUp size={18} />
               </Button>
             ) : (
-              <Button type="button" variant="primary" size="md" onClick={() => void handleGoogleAuth()} disabled={isAuthLoading}>
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                onClick={() => void handleGoogleAuth()}
+                disabled={isAuthLoading}
+                className="w-full justify-center sm:w-auto"
+              >
                 {isAuthLoading ? 'Вход...' : 'Войти через Google'}
               </Button>
             )}
@@ -247,13 +254,13 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
         </div>
       </Card>
 
-      <div className="mb-6 flex items-center gap-1.5 overflow-x-auto border-b border-white/12 px-1 pb-1 sm:gap-2">
+      <div className="mb-5 flex items-center gap-1.5 overflow-x-auto border-b border-white/12 px-1 pb-1 sm:mb-6 sm:gap-2">
         <Button
           type="button"
           variant={activeTab === 'tasks' ? 'secondary' : 'ghost'}
           size="sm"
           onClick={() => setActiveTab('tasks')}
-          className="rounded-b-none"
+          className="min-w-max rounded-b-none"
         >
           Задачи
         </Button>
@@ -262,7 +269,7 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
           variant={activeTab === 'review' ? 'secondary' : 'ghost'}
           size="sm"
           onClick={() => setActiveTab('review')}
-          className="rounded-b-none"
+          className="min-w-max rounded-b-none"
         >
           Проверка кода
         </Button>
@@ -271,7 +278,7 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
           variant={activeTab === 'archive' ? 'secondary' : 'ghost'}
           size="sm"
           onClick={() => setActiveTab('archive')}
-          className="rounded-b-none"
+          className="min-w-max rounded-b-none"
         >
           Архивировать
         </Button>
@@ -321,11 +328,11 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
                   Сообщений: {session.messageCount} · Обновлено: {formatDate(session.lastMessageAt)}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="secondary" size="sm" onClick={() => onOpenChatSession(session.id)}>
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                <Button type="button" variant="secondary" size="sm" onClick={() => onOpenChatSession(session.id)} className="w-full sm:w-auto">
                   Открыть чат
                 </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => toggleArchive(session.id, true)}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => toggleArchive(session.id, true)} className="w-full sm:w-auto">
                   <Archive size={14} />
                   Перенести в архив
                 </Button>
@@ -420,11 +427,11 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
                   Сообщений: {session.messageCount} · Завершен: {formatDate(session.lastMessageAt)}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="secondary" size="sm" onClick={() => onOpenChatSession(session.id)}>
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                <Button type="button" variant="secondary" size="sm" onClick={() => onOpenChatSession(session.id)} className="w-full sm:w-auto">
                   Открыть чат
                 </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => toggleArchive(session.id, false)}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => toggleArchive(session.id, false)} className="w-full sm:w-auto">
                   Вернуть в задачи
                 </Button>
               </div>

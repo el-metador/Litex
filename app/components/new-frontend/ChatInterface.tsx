@@ -411,8 +411,8 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
   }, [baselineFiles, workspaceFiles, selectedFile]);
 
   return (
-    <div className="mx-2 mt-2 flex min-h-[calc(100dvh-84px)] flex-col rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] elevation-2 md:h-[calc(100vh-84px)]">
-      <header className="border-b border-white/10 px-4 py-3">
+    <div className="mx-auto mt-2 flex h-[calc(100dvh-4.35rem)] w-[calc(100%-1rem)] max-w-[1280px] flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] elevation-2 sm:h-[calc(100dvh-4.75rem)]">
+      <header className="border-b border-white/10 px-3 py-2.5 sm:px-4 sm:py-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex items-center gap-3">
             <Button onClick={onBack} type="button" variant="ghost" size="icon" aria-label="Back to dashboard">
@@ -430,8 +430,8 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
           ) : null}
         </div>
 
-        <div className="mt-3 overflow-x-auto">
-          <div className="inline-flex min-w-full gap-2 sm:min-w-0">
+        <div className="mt-2.5 overflow-x-auto">
+          <div className="inline-flex min-w-full gap-1.5 sm:min-w-0 sm:gap-2">
             {PANEL_TITLES.map((panel) => (
               <Button
                 key={panel.id}
@@ -439,7 +439,7 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
                 variant={activePanel === panel.id ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setActivePanel(panel.id)}
-                className="whitespace-nowrap"
+                className="min-w-max whitespace-nowrap"
               >
                 {panel.label}
               </Button>
@@ -448,9 +448,9 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
         {activePanel === 'discussion' ? (
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             {messages.map((message, index) => {
               const content = getMessageDisplayContent(message);
               const isPendingAssistantMessage = isLoading && message.role === 'assistant' && index === messages.length - 1 && !content;
@@ -458,7 +458,7 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
               return (
                 <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div
-                    className={`max-w-[94%] whitespace-pre-wrap rounded-[var(--radius-lg)] border px-4 py-3 text-sm leading-relaxed sm:max-w-[88%] sm:px-5 ${
+                    className={`max-w-[92%] whitespace-pre-wrap rounded-[var(--radius-lg)] border px-3.5 py-3 text-sm leading-relaxed sm:max-w-[86%] sm:px-5 ${
                       message.role === 'user'
                         ? 'border-white/16 bg-white/12 text-white elevation-2'
                         : 'border-white/10 bg-[rgba(0,0,0,0.14)] text-gray-100 elevation-1'
@@ -477,7 +477,7 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
             ) : null}
 
             {isAwaitingResponse ? (
-              <Card elevation={2} className="min-w-[240px] max-w-[420px] p-4">
+              <Card elevation={2} className="w-full max-w-[440px] p-4">
                 <div className="text-xs text-gray-200">{responseStatusLabel}</div>
                 <div className="mt-3 space-y-2">
                   <div className="skeleton skeleton-line w-4/5" />
@@ -499,7 +499,7 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
           <Card elevation={1} className="space-y-2 p-4">
             {logs.length === 0 ? <p className="text-sm text-gray-400">Журнал пока пуст. Отправьте запрос агенту.</p> : null}
             {logs.map((entry, index) => (
-              <p key={`${entry}-${index}`} className="break-words font-mono text-xs text-gray-200 sm:text-sm">
+              <p key={`${entry}-${index}`} className="break-words font-mono text-xs leading-relaxed text-gray-200 sm:text-sm">
                 {entry}
               </p>
             ))}
@@ -541,22 +541,24 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
         {activePanel === 'preview' ? (
           <Card elevation={1} className="overflow-hidden">
             <div className="flex min-h-[380px] flex-col md:flex-row">
-              <aside className="space-y-1 border-b border-white/10 p-3 md:w-64 md:border-b-0 md:border-r">
-                {Object.keys(workspaceFiles).map((path) => (
-                  <Button
-                    key={path}
-                    type="button"
-                    variant={selectedFile === path ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => setSelectedFile(path)}
-                    className="w-full justify-start text-left"
-                  >
-                    {path}
-                  </Button>
-                ))}
+              <aside className="border-b border-white/10 p-2 md:w-64 md:border-b-0 md:border-r md:p-3">
+                <div className="flex gap-1 overflow-x-auto md:block md:space-y-1">
+                  {Object.keys(workspaceFiles).map((path) => (
+                    <Button
+                      key={path}
+                      type="button"
+                      variant={selectedFile === path ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setSelectedFile(path)}
+                      className="min-w-max justify-start text-left md:w-full"
+                    >
+                      {path}
+                    </Button>
+                  ))}
+                </div>
               </aside>
 
-              <div className="flex-1 p-3">
+              <div className="flex-1 p-2.5 sm:p-3">
                 <textarea
                   value={workspaceFiles[selectedFile] || ''}
                   onChange={(event) =>
@@ -565,7 +567,7 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
                       [selectedFile]: event.target.value,
                     }))
                   }
-                  className="ui-focus-ring min-h-[320px] w-full resize-y rounded-[var(--radius-md)] border border-white/10 bg-[rgba(0,0,0,0.25)] p-3 font-mono text-xs text-gray-200 outline-none"
+                  className="ui-focus-ring min-h-[260px] w-full resize-y rounded-[var(--radius-md)] border border-white/10 bg-[rgba(0,0,0,0.25)] p-3 font-mono text-[11px] text-gray-200 outline-none sm:min-h-[320px] sm:text-xs"
                 />
               </div>
             </div>
@@ -575,8 +577,8 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
         <div ref={messagesEndRef} />
       </div>
 
-      <footer className="border-t border-white/10 p-3 sm:p-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}>
-        <Card elevation={2} className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2 p-2 sm:flex-nowrap">
+      <footer className="border-t border-white/10 p-2.5 sm:p-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}>
+        <Card elevation={2} className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-2 p-2 sm:flex-nowrap sm:gap-3">
           <input
             ref={inputFileRef}
             type="file"
@@ -593,6 +595,7 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
             onClick={() => inputFileRef.current?.click()}
             disabled={auth.status !== 'authenticated'}
             aria-label="Прикрепить изображение"
+            className="shrink-0"
           >
             +
           </Button>
@@ -606,7 +609,7 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
                 ? 'Запросить изменения или задать вопрос...'
                 : 'Войдите через Google, чтобы писать в чат'
             }
-            className="ui-focus-ring min-w-0 flex-1 rounded-[var(--radius-md)] border border-transparent bg-transparent px-2 py-2 text-[16px] text-white outline-none placeholder-gray-500 disabled:bg-transparent disabled:text-gray-400 disabled:opacity-100 sm:text-base"
+            className="ui-focus-ring order-2 min-w-0 flex-1 rounded-[var(--radius-md)] border border-transparent bg-transparent px-2 py-2 text-[16px] text-white outline-none placeholder-gray-500 disabled:bg-transparent disabled:text-gray-400 disabled:opacity-100 sm:order-none sm:text-base"
             disabled={auth.status !== 'authenticated'}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -616,18 +619,33 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
           />
 
           {auth.status === 'authenticated' ? (
-            <Button type="button" variant="primary" size="icon" onClick={() => void handleSend()} disabled={!canSend} aria-label="Send">
+            <Button
+              type="button"
+              variant="primary"
+              size="icon"
+              onClick={() => void handleSend()}
+              disabled={!canSend}
+              aria-label="Send"
+              className="order-3 shrink-0"
+            >
               <ArrowUp size={20} />
             </Button>
           ) : (
-            <Button type="button" variant="primary" size="md" onClick={() => void handleGoogleAuth()} disabled={isAuthLoading}>
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              onClick={() => void handleGoogleAuth()}
+              disabled={isAuthLoading}
+              className="order-3 w-full justify-center sm:w-auto"
+            >
               {isAuthLoading ? 'Вход...' : 'Войти через Google'}
             </Button>
           )}
         </Card>
 
         {attachedImages.length > 0 ? (
-          <div className="mx-auto mt-2 flex max-w-4xl flex-wrap gap-2">
+          <div className="mx-auto mt-2 flex max-w-5xl flex-wrap gap-2">
             {attachedImages.map((file) => (
               <span
                 key={file.name}

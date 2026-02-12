@@ -61,8 +61,8 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
 
   return (
     <>
-      <nav className="mx-2 mt-2 flex h-[3.25rem] items-center justify-between rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] px-3 elevation-2 sm:h-14 sm:px-4">
-        <div className="min-w-0 flex items-center gap-3">
+      <nav className="mx-auto mt-2 flex h-[3.35rem] w-[calc(100%-1rem)] max-w-[1280px] items-center justify-between rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] px-2.5 elevation-2 sm:h-14 sm:px-4">
+        <div className="min-w-0 flex items-center gap-2 sm:gap-3">
           <Button
             type="button"
             variant="ghost"
@@ -79,34 +79,48 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
             onClick={() => handleNavigate('dashboard')}
             className="ui-focus-ring ui-interactive flex min-w-0 items-center gap-2 rounded-[var(--radius-md)] bg-transparent p-1 text-white"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[var(--shadow-sm)]">
-              <Terminal size={18} className="text-white" />
+            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[var(--shadow-sm)] sm:h-9 sm:w-9">
+              <Terminal size={17} className="text-white" />
             </span>
-            <span className="truncate text-base font-semibold tracking-tight sm:text-lg">LiteCode</span>
+            <span className="truncate text-sm font-semibold tracking-tight sm:text-lg">LiteCode</span>
           </button>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
           {currentView === 'chat' ? (
-            <div className="hidden items-center gap-2 rounded-full border border-white/14 bg-[rgba(255,255,255,0.06)] px-3 py-1.5 text-xs text-gray-300 md:flex elevation-1">
+            <div className="hidden items-center gap-2 rounded-full border border-white/14 bg-[rgba(255,255,255,0.06)] px-3 py-1.5 text-xs text-gray-300 lg:flex elevation-1">
               <Shield size={12} />
               <span>Private Beta - Lite Agent</span>
             </div>
           ) : null}
 
           {auth.status === 'authenticated' ? (
-            <div className="hidden max-w-[220px] truncate text-xs text-gray-300 sm:block">{auth.email || 'Авторизованный пользователь'}</div>
+            <div className="hidden max-w-[220px] truncate text-xs text-gray-300 lg:block">{auth.email || 'Авторизованный пользователь'}</div>
           ) : (
-            <Button type="button" variant="primary" size="sm" onClick={() => void handleGoogleAuth()} disabled={isAuthLoading}>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => void handleGoogleAuth()}
+              disabled={isAuthLoading}
+              className="hidden sm:inline-flex"
+            >
               {isAuthLoading ? 'Вход...' : 'Войти через Google'}
             </Button>
           )}
 
-          <Button type="button" variant="secondary" size="sm" onClick={handleOpenSettings} className="hidden sm:inline-flex">
+          <Button type="button" variant="secondary" size="sm" onClick={handleOpenSettings} className="hidden lg:inline-flex">
             Настройки
           </Button>
 
-          <Button type="button" variant="ghost" size="icon" onClick={handleOpenSettings} aria-label="Open settings">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleOpenSettings}
+            aria-label="Open settings"
+            className="hidden md:inline-flex"
+          >
             <Settings size={18} />
           </Button>
         </div>
@@ -134,7 +148,7 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
               initial="initial"
               animate="animate"
               exit="exit"
-              className="surface-card elevation-4 absolute left-2 right-2 top-16 z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto space-y-2 rounded-[var(--radius-lg)] p-3"
+              className="surface-card elevation-4 absolute bottom-3 left-3 right-3 top-[calc(env(safe-area-inset-top)+3.85rem)] z-50 overflow-y-auto space-y-2 rounded-[var(--radius-lg)] p-3"
               style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
             >
               <Button

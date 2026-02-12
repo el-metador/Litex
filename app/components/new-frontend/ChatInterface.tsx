@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useStore } from '@nanostores/react';
 import { useChat } from 'ai/react';
-import { ArrowLeft, ArrowUp, Bot, CheckCircle2, Circle, CircleDashed, User2 } from 'lucide-react';
+import { ArrowLeft, ArrowUp } from 'lucide-react';
 import { diffLines } from 'diff';
 import type { Message } from 'ai';
 import { Button } from '~/components/ui/Button';
 import { Card } from '~/components/ui/Card';
-import { buildAutoTodoPlanFromPrompt, parseTodoPlanContent, type TodoPlanItem } from '~/lib/runtime/todo-plan';
 import { authStore } from '~/lib/stores/auth';
 import { chatStore } from '~/lib/stores/chat';
 import { fetchWithSupabaseAuth } from '~/lib/supabase/authenticated-fetch';
@@ -21,21 +20,14 @@ interface ChatInterfaceProps {
   onToast: (message: string) => void;
 }
 
-type ChatPanel = 'discussion' | 'plan' | 'logs' | 'diff' | 'preview';
+type ChatPanel = 'discussion' | 'logs' | 'diff' | 'preview';
 
 const PANEL_TITLES: Array<{ id: ChatPanel; label: string }> = [
   { id: 'discussion', label: 'Обсуждение' },
-  { id: 'plan', label: 'План' },
   { id: 'logs', label: 'Журнал' },
   { id: 'diff', label: 'Разница' },
   { id: 'preview', label: 'Предварительный просмотр' },
 ];
-
-const TODO_STATUS_LABEL: Record<TodoPlanItem['status'], string> = {
-  pending: 'Ожидает',
-  in_progress: 'В работе',
-  completed: 'Готово',
-};
 
 const DEFAULT_WORKSPACE_FILES: Record<string, string> = {
   'app/routes/_index.tsx': `export default function Index() {\n  return <main>Welcome</main>;\n}\n`,
@@ -55,11 +47,6 @@ function extractFirstCodeBlock(content: string) {
 interface BoltFileAction {
   filePath: string;
   content: string;
-}
-
-interface BoltTodoAction {
-  title?: string;
-  items: TodoPlanItem[];
 }
 
 function extractBoltFileActions(content: string): BoltFileAction[] {
@@ -88,36 +75,6 @@ function extractBoltFileActions(content: string): BoltFileAction[] {
   }
 
   return actions;
-}
-
-function extractBoltTodoAction(content: string): BoltTodoAction | null {
-  const actionRegex = /<boltAction\b([^>]*)>([\s\S]*?)<\/boltAction>/gi;
-  let actionMatch: RegExpExecArray | null;
-
-  let latestTodo: BoltTodoAction | null = null;
-
-  while ((actionMatch = actionRegex.exec(content)) !== null) {
-    const attributes = actionMatch[1] ?? '';
-    const typeMatch = attributes.match(/\btype=(['"])(.*?)\1/i);
-
-    if (!typeMatch || typeMatch[2] !== 'todo') {
-      continue;
-    }
-
-    const titleMatch = attributes.match(/\btitle=(['"])(.*?)\1/i);
-    const parsedPlan = parseTodoPlanContent((actionMatch[2] ?? '').trim());
-
-    if (!parsedPlan || parsedPlan.items.length === 0) {
-      continue;
-    }
-
-    latestTodo = {
-      title: titleMatch?.[2]?.trim() || parsedPlan.title,
-      items: parsedPlan.items,
-    };
-  }
-
-  return latestTodo;
 }
 
 function extractTextFromMessageParts(parts: unknown) {
@@ -172,48 +129,6 @@ function getMessageDisplayContent(message: { content?: unknown; parts?: unknown 
   return typeof message.content === 'string' ? message.content : '';
 }
 
-function todoStatusIcon(status: TodoPlanItem['status']) {
-  if (status === 'completed') {
-    return <CheckCircle2 size={14} className="text-emerald-300" />;
-  }
-
-  if (status === 'in_progress') {
-    return <CircleDashed size={14} className="text-cyan-300" />;
-  }
-
-  return <Circle size={14} className="text-gray-400" />;
-}
-
-function todoStatusBadgeClass(status: TodoPlanItem['status']) {
-  if (status === 'completed') {
-    return 'border-emerald-400/30 bg-emerald-500/16 text-emerald-200';
-  }
-
-  if (status === 'in_progress') {
-    return 'border-cyan-400/30 bg-cyan-500/16 text-cyan-200';
-  }
-
-  return 'border-white/14 bg-white/10 text-gray-200';
-}
-
-function messageRoleMeta(role: Message['role']) {
-  if (role === 'user') {
-    return {
-      label: 'Вы',
-      icon: <User2 size={12} />,
-      wrapperClass: 'border-white/18 bg-white/12 text-white',
-      metaClass: 'text-white/80',
-    };
-  }
-
-  return {
-    label: 'Lite Agent',
-    icon: <Bot size={12} />,
-    wrapperClass: 'border-white/10 bg-[rgba(11,17,25,0.72)] text-gray-100',
-    metaClass: 'text-gray-300',
-  };
-}
-
 export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, onToast }: ChatInterfaceProps) {
   const auth = useStore(authStore);
   const { model } = useStore(chatStore);
@@ -221,9 +136,6 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
   const [inputValue, setInputValue] = useState('');
   const [attachedImages, setAttachedImages] = useState<File[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
-  const [todoTitle, setTodoTitle] = useState('План выполнения');
-  const [todoItems, setTodoItems] = useState<TodoPlanItem[]>([]);
-  const [todoUpdatedAt, setTodoUpdatedAt] = useState<string | null>(null);
   const [workspaceFiles, setWorkspaceFiles] = useState<Record<string, string>>(DEFAULT_WORKSPACE_FILES);
   const [baselineFiles, setBaselineFiles] = useState<Record<string, string>>(DEFAULT_WORKSPACE_FILES);
   const [selectedFile, setSelectedFile] = useState<string>(Object.keys(DEFAULT_WORKSPACE_FILES)[0]);
@@ -231,10 +143,6 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputFileRef = useRef<HTMLInputElement>(null);
   const lastImportedAssistantMessageIdRef = useRef<string | null>(null);
-  const lastImportedTodoMessageIdRef = useRef<string | null>(null);
-  const hasRealtimeTodoRef = useRef(false);
-  const autoPlanSeededRef = useRef(false);
-  const prevAwaitingResponseRef = useRef(false);
   const lastStoredSignatureRef = useRef<string>('');
   const initialPromptRequestRef = useRef<string>('');
   const { initialMessages: historyMessages, ready: historyReady, sessionId, storeMessageHistory } = useChatHistory();
@@ -286,12 +194,6 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
       setLogs((prev) => [...prev, `[${timestamp()}] Lite Agent завершил ответ (${finishReason})`]);
     },
   });
-
-  const firstUserMessageContent = useMemo(() => {
-    const firstUserMessage = messages.find((message) => message.role === 'user');
-    return firstUserMessage ? getMessageDisplayContent(firstUserMessage).trim() : '';
-  }, [messages]);
-  const isAwaitingResponse = auth.status === 'authenticated' && (status === 'submitted' || status === 'streaming');
 
   useEffect(() => {
     if (!historyReady || historyMessages.length === 0) {
@@ -380,20 +282,11 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
     }
 
     const plainText = getMessageDisplayContent(lastMessage);
-    const todoAction = extractBoltTodoAction(plainText);
-
-    if (todoAction && lastImportedTodoMessageIdRef.current !== lastMessage.id) {
-      hasRealtimeTodoRef.current = true;
-      setTodoItems(todoAction.items);
-      setTodoTitle(todoAction.title || 'План выполнения');
-      setTodoUpdatedAt(timestamp());
-      setLogs((prev) => [...prev, `[${timestamp()}] Получен и обновлен план задач (${todoAction.items.length})`]);
-      lastImportedTodoMessageIdRef.current = lastMessage.id;
-    }
-
     const boltFileActions = extractBoltFileActions(plainText);
 
     if (boltFileActions.length > 0) {
+      lastImportedAssistantMessageIdRef.current = lastMessage.id;
+
       setWorkspaceFiles((prev) => {
         const nextFiles = { ...prev };
 
@@ -413,16 +306,16 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
       });
 
       setLogs((prev) => [...prev, `[${timestamp()}] Обновлены файлы из ответа агента (${boltFileActions.length})`]);
-      lastImportedAssistantMessageIdRef.current = lastMessage.id;
       return;
     }
 
     const extractedCode = extractFirstCodeBlock(plainText);
 
     if (!extractedCode) {
-      lastImportedAssistantMessageIdRef.current = lastMessage.id;
       return;
     }
+
+    lastImportedAssistantMessageIdRef.current = lastMessage.id;
 
     setWorkspaceFiles((prev) => ({
       ...prev,
@@ -430,7 +323,6 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
     }));
 
     setLogs((prev) => [...prev, `[${timestamp()}] Код обновлен в файле ${selectedFile}`]);
-    lastImportedAssistantMessageIdRef.current = lastMessage.id;
   }, [messages, isLoading, selectedFile]);
 
   useEffect(() => {
@@ -451,100 +343,6 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
       setLogs((prev) => [...prev, `[${timestamp()}] Ошибка сохранения истории: ${message}`]);
     });
   }, [auth.status, isLoading, messages, storeMessageHistory]);
-
-  useEffect(() => {
-    if (autoPlanSeededRef.current || hasRealtimeTodoRef.current || !firstUserMessageContent) {
-      return;
-    }
-
-    if (todoItems.length > 0) {
-      autoPlanSeededRef.current = true;
-      return;
-    }
-
-    const generatedPlan = buildAutoTodoPlanFromPrompt(firstUserMessageContent);
-
-    if (generatedPlan.items.length === 0) {
-      return;
-    }
-
-    autoPlanSeededRef.current = true;
-    setTodoTitle(generatedPlan.title || 'Стартовый план');
-    setTodoItems(generatedPlan.items);
-    setTodoUpdatedAt(timestamp());
-    setLogs((prev) => [...prev, `[${timestamp()}] Сформирован стартовый план (${generatedPlan.items.length})`]);
-  }, [firstUserMessageContent, todoItems.length]);
-
-  useEffect(() => {
-    const wasAwaiting = prevAwaitingResponseRef.current;
-    prevAwaitingResponseRef.current = isAwaitingResponse;
-
-    if (hasRealtimeTodoRef.current || !autoPlanSeededRef.current || todoItems.length === 0) {
-      return;
-    }
-
-    if (!wasAwaiting && isAwaitingResponse) {
-      const hasInProgress = todoItems.some((item) => item.status === 'in_progress');
-
-      if (hasInProgress) {
-        return;
-      }
-
-      const nextPendingIndex = todoItems.findIndex((item) => item.status === 'pending');
-
-      if (nextPendingIndex === -1) {
-        return;
-      }
-
-      const nextItems = todoItems.map((item, index) =>
-        index === nextPendingIndex
-          ? {
-              ...item,
-              status: 'in_progress' as const,
-            }
-          : item,
-      );
-
-      setTodoItems(nextItems);
-      setTodoUpdatedAt(timestamp());
-      setLogs((prev) => [...prev, `[${timestamp()}] Авто-план: начата задача ${nextPendingIndex + 1}`]);
-      return;
-    }
-
-    if (wasAwaiting && !isAwaitingResponse) {
-      const currentIndex = todoItems.findIndex((item) => item.status === 'in_progress');
-
-      if (currentIndex === -1) {
-        return;
-      }
-
-      const completedItems = todoItems.map((item, index) =>
-        index === currentIndex
-          ? {
-              ...item,
-              status: 'completed' as const,
-            }
-          : item,
-      );
-
-      const nextPendingIndex = completedItems.findIndex((item) => item.status === 'pending');
-      const nextItems =
-        nextPendingIndex === -1
-          ? completedItems
-          : completedItems.map((item, index) =>
-              index === nextPendingIndex
-                ? {
-                    ...item,
-                    status: 'in_progress' as const,
-                  }
-                : item,
-            );
-
-      setTodoItems(nextItems);
-      setTodoUpdatedAt(timestamp());
-      setLogs((prev) => [...prev, `[${timestamp()}] Авто-план: обновлены статусы задач`]);
-    }
-  }, [isAwaitingResponse, todoItems]);
 
   const handleGoogleAuth = async () => {
     if (isAuthLoading) {
@@ -597,9 +395,12 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
     }
   };
 
+  const firstUserMessage = messages.find((message) => message.role === 'user');
+  const firstUserMessageContent = firstUserMessage ? getMessageDisplayContent(firstUserMessage).trim() : '';
   const chatTitle = firstUserMessageContent.slice(0, 80) || initialPrompt.trim() || 'Новая задача';
   const modelLabel = getLlmModelDefinition(model)?.label || 'Lite Agent';
   const canSend = inputValue.trim().length > 0 && auth.status === 'authenticated' && !isLoading;
+  const isAwaitingResponse = auth.status === 'authenticated' && (status === 'submitted' || status === 'streaming');
   const responseStatusLabel = status === 'submitted' ? 'Lite Agent получил ваш запрос' : 'Lite Agent формирует ответ';
 
   const diffOutput = useMemo(() => {
@@ -609,63 +410,39 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
     return diffLines(before, after);
   }, [baselineFiles, workspaceFiles, selectedFile]);
 
-  const todoStats = useMemo(() => {
-    const stats = {
-      pending: 0,
-      in_progress: 0,
-      completed: 0,
-    } satisfies Record<TodoPlanItem['status'], number>;
-
-    for (const item of todoItems) {
-      stats[item.status] += 1;
-    }
-
-    return stats;
-  }, [todoItems]);
-
-  const todoProgressPercent = todoItems.length > 0 ? Math.round((todoStats.completed / todoItems.length) * 100) : 0;
-
   return (
-    <div className="mx-auto mt-2 flex h-[calc(100dvh-4.4rem)] w-[calc(100%-1rem)] max-w-[1320px] flex-col overflow-hidden rounded-[calc(var(--radius-lg)+6px)] border border-[var(--surface-border)] bg-[var(--surface-base)] elevation-3 sm:h-[calc(100dvh-4.9rem)]">
-      <header className="border-b border-white/10 px-3 py-3 sm:px-5 sm:py-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex items-start gap-3">
-            <Button onClick={onBack} type="button" variant="ghost" size="icon" aria-label="Back to dashboard" className="mt-0.5">
+    <div className="mx-auto mt-2 flex h-[calc(100dvh-4.35rem)] w-[calc(100%-1rem)] max-w-[1280px] flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] elevation-2 sm:h-[calc(100dvh-4.75rem)]">
+      <header className="border-b border-white/10 px-3 py-2.5 sm:px-4 sm:py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex items-center gap-3">
+            <Button onClick={onBack} type="button" variant="ghost" size="icon" aria-label="Back to dashboard">
               <ArrowLeft size={20} />
             </Button>
             <div className="min-w-0">
-              <p className="ui-kicker mb-1">Agent Session</p>
-              <h1 className="truncate font-[var(--font-display)] text-xl font-semibold tracking-tight text-white sm:text-2xl">{chatTitle}</h1>
-              <p className="truncate text-xs text-gray-400">{modelLabel}</p>
+              <div className="truncate text-sm font-medium text-white">{chatTitle}</div>
+              <div className="truncate text-xs text-gray-400">{modelLabel}</div>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <span className="hidden rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-[11px] text-gray-300 sm:inline-flex">
-              {auth.status === 'authenticated' ? 'Connected' : 'Guest mode'}
-            </span>
-            {auth.status !== 'authenticated' ? (
-              <Button type="button" variant="primary" size="sm" onClick={() => void handleGoogleAuth()} disabled={isAuthLoading}>
-                {isAuthLoading ? 'Вход...' : 'Войти'}
-              </Button>
-            ) : null}
-          </div>
+          {auth.status !== 'authenticated' ? (
+            <Button type="button" variant="primary" size="sm" onClick={() => void handleGoogleAuth()} disabled={isAuthLoading}>
+              {isAuthLoading ? 'Вход...' : 'Войти через Google'}
+            </Button>
+          ) : null}
         </div>
 
-        <div className="mt-3 overflow-x-auto">
+        <div className="mt-2.5 overflow-x-auto">
           <div className="inline-flex min-w-full gap-1.5 sm:min-w-0 sm:gap-2">
             {PANEL_TITLES.map((panel) => (
-              <button
+              <Button
                 key={panel.id}
                 type="button"
+                variant={activePanel === panel.id ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setActivePanel(panel.id)}
-                className={`ui-focus-ring ui-interactive min-w-max whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium ${
-                  activePanel === panel.id
-                    ? 'border-white/24 bg-white/[0.12] text-white'
-                    : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-white/18 hover:text-white'
-                }`}
+                className="min-w-max whitespace-nowrap"
               >
                 {panel.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -677,41 +454,21 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
             {messages.map((message, index) => {
               const content = getMessageDisplayContent(message);
               const isPendingAssistantMessage = isLoading && message.role === 'assistant' && index === messages.length - 1 && !content;
-              const roleMeta = messageRoleMeta(message.role);
 
               return (
                 <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div
-                    className={`max-w-[94%] rounded-[var(--radius-lg)] border px-4 py-3 sm:max-w-[88%] sm:px-5 ${roleMeta.wrapperClass}`}
+                    className={`max-w-[92%] whitespace-pre-wrap rounded-[var(--radius-lg)] border px-3.5 py-3 text-sm leading-relaxed sm:max-w-[86%] sm:px-5 ${
+                      message.role === 'user'
+                        ? 'border-white/16 bg-white/12 text-white elevation-2'
+                        : 'border-white/10 bg-[rgba(0,0,0,0.14)] text-gray-100 elevation-1'
+                    }`}
                   >
-                    <div className={`mb-2 inline-flex items-center gap-1.5 text-[11px] font-medium ${roleMeta.metaClass}`}>
-                      {roleMeta.icon}
-                      <span>{roleMeta.label}</span>
-                    </div>
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {content ? content : !isPendingAssistantMessage ? <span className="text-gray-500">Ответ без текста.</span> : null}
-                    </div>
+                    {content ? content : !isPendingAssistantMessage ? <span className="text-gray-500">Ответ без текста.</span> : null}
                   </div>
                 </div>
               );
             })}
-
-            {todoItems.length > 0 ? (
-              <Card elevation={2} className="space-y-3 border-white/10 bg-white/[0.03] p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="ui-kicker mb-1">Execution Plan</p>
-                    <div className="font-[var(--font-display)] text-base font-semibold tracking-tight text-white">{todoTitle}</div>
-                    {todoUpdatedAt ? <div className="text-xs text-gray-400">Обновлено: {todoUpdatedAt}</div> : null}
-                  </div>
-                  <div className="text-xs text-gray-300">{todoProgressPercent}% выполнено</div>
-                </div>
-
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-                  <div className="h-2 rounded-full bg-emerald-400 transition-[width] duration-300" style={{ width: `${todoProgressPercent}%` }} />
-                </div>
-              </Card>
-            ) : null}
 
             {auth.status !== 'authenticated' ? (
               <Card elevation={1} className="p-4 text-sm text-gray-300">
@@ -720,7 +477,7 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
             ) : null}
 
             {isAwaitingResponse ? (
-              <Card elevation={2} className="w-full max-w-[440px] border-white/10 bg-white/[0.03] p-4">
+              <Card elevation={2} className="w-full max-w-[440px] p-4">
                 <div className="text-xs text-gray-200">{responseStatusLabel}</div>
                 <div className="mt-3 space-y-2">
                   <div className="skeleton skeleton-line w-4/5" />
@@ -738,67 +495,8 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
           </div>
         ) : null}
 
-        {activePanel === 'plan' ? (
-          <Card elevation={2} className="space-y-4 border-white/10 bg-white/[0.03] p-4">
-            {todoItems.length === 0 ? (
-              <p className="text-sm text-gray-400">
-                План задач пока не получен. Агент может прислать его в формате
-                {' '}
-                <code className="kdb">{'<boltAction type="todo">[...]</boltAction>'}</code>
-                .
-              </p>
-            ) : (
-              <>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="ui-kicker mb-1">Execution Plan</p>
-                    <h3 className="font-[var(--font-display)] text-xl font-semibold tracking-tight text-white">{todoTitle}</h3>
-                    {todoUpdatedAt ? <p className="text-xs text-gray-400">Последнее обновление: {todoUpdatedAt}</p> : null}
-                  </div>
-                  <div className="text-xs text-gray-300">{todoProgressPercent}% выполнено</div>
-                </div>
-
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-                  <div className="h-2 rounded-full bg-emerald-400 transition-[width] duration-300" style={{ width: `${todoProgressPercent}%` }} />
-                </div>
-
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="rounded-full border border-white/12 bg-[rgba(255,255,255,0.08)] px-2.5 py-1 text-gray-200">
-                    Ожидает: {todoStats.pending}
-                  </span>
-                  <span className="rounded-full border border-cyan-400/30 bg-cyan-500/16 px-2.5 py-1 text-cyan-200">
-                    В работе: {todoStats.in_progress}
-                  </span>
-                  <span className="rounded-full border border-emerald-400/30 bg-emerald-500/16 px-2.5 py-1 text-emerald-200">
-                    Готово: {todoStats.completed}
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {todoItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-start justify-between gap-3 rounded-[var(--radius-md)] border border-white/10 bg-white/[0.05] px-3 py-2.5"
-                    >
-                      <div className="flex min-w-0 items-start gap-2.5">
-                        <span className="mt-0.5 shrink-0">{todoStatusIcon(item.status)}</span>
-                        <span className="text-sm leading-relaxed text-gray-100">{item.content}</span>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${todoStatusBadgeClass(item.status)}`}
-                      >
-                        {TODO_STATUS_LABEL[item.status]}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </Card>
-        ) : null}
-
         {activePanel === 'logs' ? (
-          <Card elevation={1} className="space-y-2 border-white/10 bg-white/[0.03] p-4">
+          <Card elevation={1} className="space-y-2 p-4">
             {logs.length === 0 ? <p className="text-sm text-gray-400">Журнал пока пуст. Отправьте запрос агенту.</p> : null}
             {logs.map((entry, index) => (
               <p key={`${entry}-${index}`} className="break-words font-mono text-xs leading-relaxed text-gray-200 sm:text-sm">
@@ -809,12 +507,9 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
         ) : null}
 
         {activePanel === 'diff' ? (
-          <Card elevation={1} className="border-white/10 bg-white/[0.03] p-4">
+          <Card elevation={1} className="p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="ui-kicker mb-1">Code Delta</p>
-                <h3 className="font-[var(--font-display)] text-base font-semibold tracking-tight text-white">Diff: {selectedFile}</h3>
-              </div>
+              <h3 className="text-sm font-medium text-white">Diff по файлу: {selectedFile}</h3>
               <Button type="button" variant="secondary" size="sm" onClick={() => setBaselineFiles(workspaceFiles)}>
                 Принять текущую версию как базу
               </Button>
@@ -844,7 +539,7 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
         ) : null}
 
         {activePanel === 'preview' ? (
-          <Card elevation={1} className="overflow-hidden border-white/10 bg-white/[0.03]">
+          <Card elevation={1} className="overflow-hidden">
             <div className="flex min-h-[380px] flex-col md:flex-row">
               <aside className="border-b border-white/10 p-2 md:w-64 md:border-b-0 md:border-r md:p-3">
                 <div className="flex gap-1 overflow-x-auto md:block md:space-y-1">
@@ -872,7 +567,7 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
                       [selectedFile]: event.target.value,
                     }))
                   }
-                  className="ui-focus-ring min-h-[260px] w-full resize-y rounded-[var(--radius-md)] border border-white/10 bg-black/30 p-3 font-mono text-[11px] text-gray-200 outline-none sm:min-h-[320px] sm:text-xs"
+                  className="ui-focus-ring min-h-[260px] w-full resize-y rounded-[var(--radius-md)] border border-white/10 bg-[rgba(0,0,0,0.25)] p-3 font-mono text-[11px] text-gray-200 outline-none sm:min-h-[320px] sm:text-xs"
                 />
               </div>
             </div>
@@ -883,13 +578,7 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
       </div>
 
       <footer className="border-t border-white/10 p-2.5 sm:p-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}>
-        <Card elevation={2} className="mx-auto w-full max-w-5xl border-white/10 bg-white/[0.03] p-2.5">
-          <div className="mb-2 flex items-center justify-between gap-3 px-1">
-            <p className="ui-kicker">Prompt Composer</p>
-            <span className="text-[11px] text-gray-500">{attachedImages.length > 0 ? `${attachedImages.length} files` : 'No attachments'}</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-3">
+        <Card elevation={2} className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-2 p-2 sm:flex-nowrap sm:gap-3">
           <input
             ref={inputFileRef}
             type="file"
@@ -953,7 +642,6 @@ export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, o
               {isAuthLoading ? 'Вход...' : 'Войти через Google'}
             </Button>
           )}
-          </div>
         </Card>
 
         {attachedImages.length > 0 ? (

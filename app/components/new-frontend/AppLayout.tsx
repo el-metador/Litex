@@ -12,8 +12,6 @@ export function AppLayout({ navbar, children, overlays, toast }: AppLayoutProps)
     <div className="litecode-app app-shell min-h-[100dvh] text-white selection:bg-[#10a37f] selection:text-white">
       <div aria-hidden="true" className="app-shell__bg">
         <span className="app-shell__bg-glow" />
-        <span className="app-shell__bg-beam" />
-        <span className="app-shell__bg-grid" />
         <span className="app-shell__bg-noise" />
         <span className="app-shell__bg-vignette" />
       </div>

@@ -118,16 +118,16 @@
   --transition-base: 240ms cubic-bezier(0.22, 1, 0.36, 1);
   --transition-slow: 400ms cubic-bezier(0.22, 1, 0.36, 1);
 
-  --focus-ring: rgba(88, 194, 255, 0.52);
-  --overlay-blur: 14px;
-  --overlay-backdrop: rgba(5, 8, 12, 0.58);
+  --focus-ring: rgba(99, 102, 241, 0.42);
+  --overlay-blur: 16px;
+  --overlay-backdrop: rgba(4, 4, 8, 0.72);
 
-  --app-bg-layer-1: #0b0d11;
-  --app-bg-layer-2: #11161f;
-  --app-bg-layer-3: #1a2330;
-  --surface-base: rgba(19, 25, 34, 0.86);
-  --surface-elevated: rgba(31, 37, 49, 0.88);
-  --surface-border: rgba(255, 255, 255, 0.12);
+  --app-bg-layer-1: #050505;
+  --app-bg-layer-2: #08080a;
+  --app-bg-layer-3: #0c0c12;
+  --surface-base: rgba(14, 14, 18, 0.76);
+  --surface-elevated: rgba(22, 22, 30, 0.8);
+  --surface-border: rgba(255, 255, 255, 0.1);
 }
 
 :root[data-theme='light'] {
@@ -164,6 +164,12 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
+  --bolt-elements-button-primary-background: #6366f1;
+  --bolt-elements-button-primary-backgroundHover: #5558e3;
+  --bolt-elements-button-primary-text: #ffffff;
+  --bolt-elements-button-secondary-background: rgba(255, 255, 255, 0.06);
+  --bolt-elements-button-secondary-backgroundHover: rgba(255, 255, 255, 0.12);
+  --bolt-elements-button-secondary-text: #f3f6f9;
 }
 
 /*

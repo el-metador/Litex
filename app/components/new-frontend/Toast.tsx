@@ -20,12 +20,13 @@ export function Toast({ message, isVisible, onClose }: ToastProps) {
           initial="initial"
           animate="animate"
           exit="exit"
-          className="pointer-events-none fixed left-1/2 top-5 z-[80] -translate-x-1/2"
+          className="pointer-events-none fixed left-1/2 z-[80] w-[calc(100vw-1rem)] max-w-[520px] -translate-x-1/2"
+          style={{ top: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
         >
           <button
             type="button"
             onClick={onClose}
-            className="ui-focus-ring pointer-events-auto flex min-w-[280px] items-center gap-3 rounded-[var(--radius-md)] border border-[#34c89f]/28 bg-[#10a37f] px-4 py-3 text-white elevation-4"
+            className="ui-focus-ring pointer-events-auto flex w-full items-center gap-3 rounded-[var(--radius-md)] border border-[#34c89f]/28 bg-[#10a37f] px-4 py-3 text-white elevation-4"
           >
             <CheckCircle2 size={20} />
             <span className="text-left text-sm font-medium">{message}</span>

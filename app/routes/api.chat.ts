@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { json, type ActionFunctionArgs } from '@remix-run/node';
 import { formatDataStreamPart } from 'ai';
 import { MAX_RESPONSE_SEGMENTS, MAX_TOKENS } from '~/lib/.server/llm/constants';
+import { mergeContinuationText } from '~/lib/.server/llm/continuation';
 import { CONTINUE_PROMPT } from '~/lib/.server/llm/prompts';
 import { generateText, shouldUseNonStreamingLlm, streamText, type Messages, type StreamingOptions } from '~/lib/.server/llm/stream-text';
 import {
@@ -88,7 +89,7 @@ async function chatAction({ request }: ActionFunctionArgs) {
       for (let segment = 0; segment < MAX_RESPONSE_SEGMENTS; segment++) {
         const result = await generateText(continuedMessages, { toolChoice: 'none' }, model);
 
-        aggregatedText += result.text;
+        aggregatedText = mergeContinuationText(aggregatedText, result.text);
         finishReason = result.finishReason;
 
         if (result.finishReason !== 'length') {

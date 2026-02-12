@@ -166,8 +166,8 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 pb-20 pt-10 md:pt-16">
-      <h1 className="mb-10 text-center text-3xl font-semibold leading-tight tracking-tight text-white md:text-5xl">
+    <div className="mx-auto max-w-4xl px-3 pb-20 pt-8 sm:px-4 md:pt-16">
+      <h1 className="mb-8 text-center text-2xl font-semibold leading-tight tracking-tight text-white sm:text-3xl md:mb-10 md:text-5xl">
         Что теперь будем
         <br />
         программировать?
@@ -176,7 +176,7 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
       <Card elevation={3} className="mb-10 rounded-[calc(var(--radius-lg)+6px)]">
         <div className="px-5 pb-2 pt-4">
           <textarea
-            className="ui-focus-ring min-h-[70px] w-full resize-none rounded-[var(--radius-md)] border border-transparent bg-transparent px-2 py-2 text-lg text-white outline-none placeholder-gray-500 disabled:bg-transparent disabled:text-gray-400 disabled:opacity-100"
+            className="ui-focus-ring min-h-[70px] w-full resize-none rounded-[var(--radius-md)] border border-transparent bg-transparent px-2 py-2 text-[16px] text-white outline-none placeholder-gray-500 disabled:bg-transparent disabled:text-gray-400 disabled:opacity-100 sm:text-lg"
             placeholder={auth.status === 'authenticated' ? 'Опишите задачу для Lite Agent' : 'Войдите через Google, чтобы начать работу'}
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
@@ -247,7 +247,7 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
         </div>
       </Card>
 
-      <div className="mb-6 flex items-center gap-2 overflow-x-auto border-b border-white/12 px-1 pb-1">
+      <div className="mb-6 flex items-center gap-1.5 overflow-x-auto border-b border-white/12 px-1 pb-1 sm:gap-2">
         <Button
           type="button"
           variant={activeTab === 'tasks' ? 'secondary' : 'ghost'}
@@ -285,7 +285,7 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Поиск по истории чатов"
-              className="ui-focus-ring w-full rounded-[var(--radius-sm)] bg-transparent px-1 py-1 text-sm text-white outline-none placeholder-gray-500"
+              className="ui-focus-ring w-full rounded-[var(--radius-sm)] bg-transparent px-1 py-1 text-[16px] text-white outline-none placeholder-gray-500 sm:text-sm"
             />
           </Card>
 
@@ -321,7 +321,7 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
                   Сообщений: {session.messageCount} · Обновлено: {formatDate(session.lastMessageAt)}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button type="button" variant="secondary" size="sm" onClick={() => onOpenChatSession(session.id)}>
                   Открыть чат
                 </Button>
@@ -420,7 +420,7 @@ export function Dashboard({ onStartTask, onOpenChatSession, showToast }: Dashboa
                   Сообщений: {session.messageCount} · Завершен: {formatDate(session.lastMessageAt)}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button type="button" variant="secondary" size="sm" onClick={() => onOpenChatSession(session.id)}>
                   Открыть чат
                 </Button>

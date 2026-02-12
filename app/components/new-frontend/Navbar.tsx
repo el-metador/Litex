@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Menu, Settings, Shield, Terminal, X } from 'lucide-react';
 import { useStore } from '@nanostores/react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
@@ -19,6 +19,19 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
   const reduceMotion = useReducedMotion();
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileMenuOpen]);
 
   const handleGoogleAuth = async () => {
     if (isAuthLoading) {
@@ -48,7 +61,7 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
 
   return (
     <>
-      <nav className="mx-2 mt-2 flex h-14 items-center justify-between rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] px-4 elevation-2">
+      <nav className="mx-2 mt-2 flex h-[3.25rem] items-center justify-between rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] px-3 elevation-2 sm:h-14 sm:px-4">
         <div className="min-w-0 flex items-center gap-3">
           <Button
             type="button"
@@ -69,7 +82,7 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
             <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[var(--shadow-sm)]">
               <Terminal size={18} className="text-white" />
             </span>
-            <span className="truncate text-lg font-semibold tracking-tight">LiteCode</span>
+            <span className="truncate text-base font-semibold tracking-tight sm:text-lg">LiteCode</span>
           </button>
         </div>
 
@@ -121,7 +134,8 @@ export function Navbar({ currentView, onNavigate, onOpenSettings }: NavbarProps)
               initial="initial"
               animate="animate"
               exit="exit"
-              className="surface-card elevation-4 absolute left-3 top-16 z-50 w-[272px] space-y-2 rounded-[var(--radius-lg)] p-3"
+              className="surface-card elevation-4 absolute left-2 right-2 top-16 z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto space-y-2 rounded-[var(--radius-lg)] p-3"
+              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
             >
               <Button
                 type="button"

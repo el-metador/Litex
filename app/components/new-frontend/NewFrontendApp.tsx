@@ -146,7 +146,9 @@ export function NewFrontendApp({ repositories, branches }: NewFrontendAppProps) 
           >
             <ChatInterface
               initialPrompt={initialPrompt}
+              onConsumeInitialPrompt={() => setInitialPrompt('')}
               onBack={() => {
+                setInitialPrompt('');
                 setCurrentView('dashboard');
                 navigate('/', { replace: true });
               }}

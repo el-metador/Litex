@@ -15,6 +15,7 @@ import { useChatHistory } from '~/lib/persistence/useChatHistory';
 
 interface ChatInterfaceProps {
   initialPrompt: string;
+  onConsumeInitialPrompt: () => void;
   onBack: () => void;
   onToast: (message: string) => void;
 }
@@ -128,7 +129,7 @@ function getMessageDisplayContent(message: { content?: unknown; parts?: unknown 
   return typeof message.content === 'string' ? message.content : '';
 }
 
-export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceProps) {
+export function ChatInterface({ initialPrompt, onConsumeInitialPrompt, onBack, onToast }: ChatInterfaceProps) {
   const auth = useStore(authStore);
   const { model } = useStore(chatStore);
   const [activePanel, setActivePanel] = useState<ChatPanel>('discussion');
@@ -218,6 +219,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
     }
 
     initialPromptRequestRef.current = prompt;
+    onConsumeInitialPrompt();
     setLogs((prev) => [...prev, `[${timestamp()}] Переносим задачу из дашборда в чат`]);
 
     void append({ role: 'user', content: prompt }).catch((initialError) => {
@@ -225,7 +227,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
       setLogs((prev) => [...prev, `[${timestamp()}] Ошибка стартового запроса: ${message}`]);
       onToast(message);
     });
-  }, [append, auth.status, historyMessages.length, historyReady, initialPrompt, isLoading, messages.length, onToast]);
+  }, [append, auth.status, historyMessages.length, historyReady, initialPrompt, isLoading, messages.length, onConsumeInitialPrompt, onToast]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -393,7 +395,9 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
     }
   };
 
-  const chatTitle = initialPrompt.trim() || 'Новая задача';
+  const firstUserMessage = messages.find((message) => message.role === 'user');
+  const firstUserMessageContent = firstUserMessage ? getMessageDisplayContent(firstUserMessage).trim() : '';
+  const chatTitle = firstUserMessageContent.slice(0, 80) || initialPrompt.trim() || 'Новая задача';
   const modelLabel = getLlmModelDefinition(model)?.label || 'Lite Agent';
   const canSend = inputValue.trim().length > 0 && auth.status === 'authenticated' && !isLoading;
   const isAwaitingResponse = auth.status === 'authenticated' && (status === 'submitted' || status === 'streaming');
@@ -407,7 +411,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
   }, [baselineFiles, workspaceFiles, selectedFile]);
 
   return (
-    <div className="mx-2 mt-2 flex h-[calc(100vh-84px)] flex-col rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] elevation-2">
+    <div className="mx-2 mt-2 flex min-h-[calc(100dvh-84px)] flex-col rounded-[var(--radius-lg)] border border-[var(--surface-border)] bg-[var(--surface-base)] elevation-2 md:h-[calc(100vh-84px)]">
       <header className="border-b border-white/10 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex items-center gap-3">
@@ -454,7 +458,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
               return (
                 <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div
-                    className={`max-w-[88%] whitespace-pre-wrap rounded-[var(--radius-lg)] border px-5 py-3 text-sm leading-relaxed ${
+                    className={`max-w-[94%] whitespace-pre-wrap rounded-[var(--radius-lg)] border px-4 py-3 text-sm leading-relaxed sm:max-w-[88%] sm:px-5 ${
                       message.role === 'user'
                         ? 'border-white/16 bg-white/12 text-white elevation-2'
                         : 'border-white/10 bg-[rgba(0,0,0,0.14)] text-gray-100 elevation-1'
@@ -571,8 +575,8 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
         <div ref={messagesEndRef} />
       </div>
 
-      <footer className="border-t border-white/10 p-4">
-        <Card elevation={2} className="mx-auto flex max-w-4xl items-center gap-2 p-2">
+      <footer className="border-t border-white/10 p-3 sm:p-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}>
+        <Card elevation={2} className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2 p-2 sm:flex-nowrap">
           <input
             ref={inputFileRef}
             type="file"
@@ -602,7 +606,7 @@ export function ChatInterface({ initialPrompt, onBack, onToast }: ChatInterfaceP
                 ? 'Запросить изменения или задать вопрос...'
                 : 'Войдите через Google, чтобы писать в чат'
             }
-            className="ui-focus-ring flex-1 rounded-[var(--radius-md)] border border-transparent bg-transparent px-2 py-2 text-sm text-white outline-none placeholder-gray-500 disabled:bg-transparent disabled:text-gray-400 disabled:opacity-100 sm:text-base"
+            className="ui-focus-ring min-w-0 flex-1 rounded-[var(--radius-md)] border border-transparent bg-transparent px-2 py-2 text-[16px] text-white outline-none placeholder-gray-500 disabled:bg-transparent disabled:text-gray-400 disabled:opacity-100 sm:text-base"
             disabled={auth.status !== 'authenticated'}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {

@@ -153,7 +153,7 @@ export function useChatHistory() {
       setSessionId(nextId);
       chatId.set(nextId);
       description.set(title ?? undefined);
-      navigateChat(nextId);
+      navigate(`/chat/${nextId}`, { replace: true });
 
       return nextId;
     })();
@@ -201,11 +201,4 @@ function inferDescriptionFromMessages(messages: Message[]) {
   const content = typeof firstUserMessage.content === 'string' ? firstUserMessage.content : JSON.stringify(firstUserMessage.content);
 
   return content.trim().slice(0, 120) || undefined;
-}
-
-function navigateChat(nextId: string) {
-  const url = new URL(window.location.href);
-  url.pathname = `/chat/${nextId}`;
-
-  window.history.replaceState({}, '', url);
 }
